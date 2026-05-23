@@ -1,0 +1,54 @@
+body {
+    font-family: sans-serif;
+    margin: 20px;
+}
+h2 {
+    text-align: center;
+}
+#visualization {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+#chart-container {
+    flex: 1 1 600px;
+    min-width: 300px;
+    max-width: 900px;
+    width: 100%;
+}
+#legend-container {
+    width: 250px;
+    margin-left: 20px;
+    max-height: 600px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #f9f9f9;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+.legend-color {
+    width: 16px;
+    height: 16px;
+    margin-right: 10px;
+    border-radius: 3px;
+}
+.tooltip {
+    position: absolute;
+    background: white;
+    border: 1px solid #aaa;
+    padding: 5px;
+    pointer-events: none;
+    display: none;
+    font-size: 12px;
+}
+.tick text {
+    font-size: 14px;
+}
