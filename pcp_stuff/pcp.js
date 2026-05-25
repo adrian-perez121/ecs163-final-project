@@ -14,6 +14,17 @@ const svg = d3.select("#pcp-chart")
 const mainGroup = svg.append("g")
     .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
+mainGroup.append("text")
+    .attr("class", "chart-title")
+    .attr("x", width / 2)
+    .attr("y", -35)
+    .style("text-anchor", "middle")
+    .style("font-size", "20px")
+    .style("font-weight", "bold")
+    .style("font-family", "sans-serif")
+    .style("fill", "#000000")
+    .text("Movie Attribute Comparisons by Genre");
+
 // Dedicated sub-groups so layers stay in order (lines behind axes)
 const linesGroup = mainGroup.append("g").attr("class", "lines-group");
 const axesGroup = mainGroup.append("g").attr("class", "axes-group");
