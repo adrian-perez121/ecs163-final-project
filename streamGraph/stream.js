@@ -1,3 +1,5 @@
+import createPieChart from "../pieChart/pieChart.js"
+
 d3.csv("output.csv").then(data => {
     
     // processes data
@@ -81,6 +83,14 @@ d3.csv("output.csv").then(data => {
         .curve(d3.curveBasis);
                 
     const tooltip = d3.select("#tooltip");
+    const label = tooltip.append("div").attr("class", "tooltip-label").style("display", "none");
+    const pieLayout = { left: 0, top: 0, width: 150, height: 150 }
+    const pieMargins = { left: 0, right: 0, top: 0, bottom: 0 };
+
+    const pieContainer = tooltip.append("svg")
+                    .attr("width", pieLayout.width + pieMargins.left + pieMargins.right)
+                    .attr("height", pieLayout.height + pieMargins.top + pieMargins.bottom)
+                    .style("display", "block"); 
     
     svg.selectAll("path")
         .data(series)
@@ -92,7 +102,14 @@ d3.csv("output.csv").then(data => {
         .attr("stroke-width", 0.5)
         .on("mouseover", function(event, d) {
             d3.select(this).attr("opacity", 1).attr("stroke", "#000").attr("stroke-width", 1);
-            tooltip.style("display", "block").html(`<b>Genre:</b> ${d.key}`);
+            tooltip.style("display", "block")
+                .style("border", "")
+                .style("outline", "")
+                .style("background", "");
+
+            pieContainer.style("display", "none")
+            label.style("display", "block").text(`Genre: ${d.key}`)
+
         })
         .on("mousemove", function(event) {
             tooltip.style("left", (event.pageX + 15) + "px")
@@ -101,10 +118,14 @@ d3.csv("output.csv").then(data => {
         .on("mouseout", function() {
             d3.select(this).attr("opacity", 0.8).attr("stroke", "#fff").attr("stroke-width", 0.5);
             tooltip.style("display", "none");
+            label.style("display", "none")
         });
         
+    // The x-axis with the ticks
     svg.append("g")
+        .attr("class", "stream-x-axis")
         .attr("transform", `translate(0,${height})`)
+        // this is where the years are being created
         .call(d3.axisBottom(x).tickFormat(d3.format("d")))
         .append("text")
         .attr("x", width / 2)
@@ -112,6 +133,44 @@ d3.csv("output.csv").then(data => {
         .attr("fill", "black")
         .style("font-size", "18px")
         .text("Year");
+
+    // Selecting the year titles
+    svg.selectAll(".stream-x-axis text")
+        .on("mouseenter", function(event) {
+            const year = new Date(d3.select(this).text());
+            const [x, y] = [event.pageX, event.pageY]
+
+            if (!Number.isNaN(year.getFullYear())) {
+                pieContainer.style("display", "block")
+                tooltip
+                    .style("display", "block")
+                    .style("left", (event.pageX + 15) + "px")
+                    .style("top", (event.pageY + 50) + "px")
+                    .style("border", "none")
+                    .style("box-shadow", "none")
+                    .style("background", "transparent");
+
+                createPieChart(pieContainer, pieLayout, pieMargins, year.getFullYear());
+            }
+
+        })
+        .on("mousemove", function(event) {
+            const year = new Date(d3.select(this).text());
+            const [x, y] = [event.pageX, event.pageY]
+
+            if (!Number.isNaN(year.getFullYear())) {     
+                tooltip
+                    .style("display", "block")
+                    .style("left", (event.pageX + 15) + "px")
+                    .style("top", (event.pageY + 50) + "px");
+            }
+        })
+        .on("mouseout", function(event) {
+            pieContainer.style("display", "none")
+            tooltip.style("display", "none")
+                .style("border", "")
+                .style("background", "")
+        })
         
     svg.append("g")
         .call(d3.axisLeft(y))

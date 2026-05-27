@@ -6,7 +6,7 @@ const height = window.innerHeight;
 
 /**
  * Creates a pie chart that shows the proportion of movies in different genres for the specified year
- * @param {d3.Selection} container - The element where the pie chart will be put
+ * @param {Object} container - The element where the pie chart will be put
  * @param {Object} layout - Contains information for where the pie chart will be positioned along with height and width
  * @param {Number} layout.left - Where the the pie chart will begin on the x axis
  * @param {Number} layout.top - Where the pie chart will begin on the y axis
@@ -71,35 +71,33 @@ function createPieChart(container, layout, margin, year) {
 
   // The slices
   // Help from https://gist.github.com/dbuezas/9306799
-  container
-    .selectAll("path.pie-slice")
-    .data(dataReady)
+  const g = container.append("g")
+    .attr("transform", `translate(${radius + margin.left}, ${radius + margin.top})`);
+
+  const arc = d3.arc().innerRadius(0).outerRadius(radius);
+
+  g.selectAll("path.pie-slice")
+    .data(dataReady, d => d.data[0])
     .join("path")
     .attr("class", "pie-slice")
-    .attr("d", d3.arc().innerRadius(0).outerRadius(radius))
-    .attr("fill", (d) => colorSlices(d.data[0]))
-    .attr(
-      "transform",
-      `translate(${radius + margin.left},  ${radius + margin.top})`,
-    );
-
-  container
-    .selectAll("text.pie-labels")
-    .data(dataReady)
-    .join("text")
-    .attr("class", "pie-labels")
-    .text((d) => d.data[0])
-    .attr("transform", (d) => {
-      const mid = (d.startAngle + d.endAngle) / 2 - Math.PI / 2;
-      const r = radius * 1.4; // outer radius
-      return `translate(${radius + margin.left + Math.cos(mid) * r}, ${radius + margin.top + Math.sin(mid) * r})`;
+    .attr("fill", d => colorSlices(d.data[0]))
+    .each(function(d) {
+      this._current = this._current || { startAngle: d.startAngle, endAngle: d.startAngle };
     })
-    .attr("text-anchor", "middle")
-    .attr("fill", (d) => colorSlices(d.data[0]));
+    .transition()
+    .duration(500)
+    .attrTween("d", function(d) {
+      const i = d3.interpolate(this._current, d);
+      this._current = i(1);
+      return t => arc(i(t));
+    });
+
 }
 
-const svg = d3.select("svg");
-const margins = { left: 80, right: 20, top: 80, bottom: 50 };
-const layout = { left: 0, top: 0, width: 200, height: 200 };
+export default createPieChart;
 
-createPieChart(svg, layout, margins, 1990);
+// const svg = d3.select("svg");
+// const margins = { left: 80, right: 20, top: 80, bottom: 50 };
+// const layout = { left: 0, top: 0, width: 200, height: 200 };
+
+// createPieChart(svg, layout, margins, 1990);
