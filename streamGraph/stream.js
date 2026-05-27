@@ -1,3 +1,4 @@
+import {genreColor} from "../utils.js"
 import createPieChart from "../pieChart/pieChart.js"
 
 d3.csv("output.csv").then(data => {
@@ -72,9 +73,9 @@ d3.csv("output.csv").then(data => {
         .range([height, 0]);
         
     // color scale
-    const color = d3.scaleOrdinal()
-        .domain(genresList)
-        .range(d3.quantize(t => d3.interpolateRainbow(t * 0.8 + 0.1), genresList.length));
+    // const color = d3.scaleOrdinal()
+    //     .domain(genresList)
+    //     .range(d3.quantize(t => d3.interpolateRainbow(t * 0.8 + 0.1), genresList.length));
         
     const area = d3.area()
         .x(d => x(d.data.year))
@@ -95,7 +96,7 @@ d3.csv("output.csv").then(data => {
     svg.selectAll("path")
         .data(series)
         .join("path")
-        .attr("fill", d => color(d.key))
+        .attr("fill", d => genreColor(d.key))
         .attr("d", area)
         .attr("opacity", 0.8)
         .attr("stroke", "#fff")
@@ -189,7 +190,7 @@ d3.csv("output.csv").then(data => {
         const item = legendContainer.append("div").attr("class", "legend-item");
         item.append("div")
             .attr("class", "legend-color")
-            .style("background-color", color(genre));
+            .style("background-color", genreColor(genre));
         item.append("span").text(genre);
     });
 
