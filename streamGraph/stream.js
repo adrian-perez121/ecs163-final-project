@@ -88,8 +88,8 @@ d3.csv("output.csv").then(data => {
     const pieMargins = { left: 0, right: 0, top: 0, bottom: 0 };
 
     const pieContainer = tooltip.append("svg")
-                    .attr("width", pieLayout.width + pieMargins.left + pieMargins.right)
-                    .attr("height", pieLayout.height + pieMargins.top + pieMargins.bottom)
+                    .attr("width", pieLayout.width + pieMargins.left + pieMargins.right + 20)
+                    .attr("height", pieLayout.height + pieMargins.top + pieMargins.bottom + 20)
                     .style("display", "block"); 
     
     svg.selectAll("path")
@@ -150,7 +150,7 @@ d3.csv("output.csv").then(data => {
                     .style("box-shadow", "none")
                     .style("background", "transparent");
 
-                createPieChart(pieContainer, pieLayout, pieMargins, year.getFullYear());
+                createPieChart(pieContainer, pieLayout, pieMargins, year.getFullYear() + 1);
             }
 
         })

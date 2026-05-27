@@ -71,8 +71,11 @@ function createPieChart(container, layout, margin, year) {
 
   // The slices
   // Help from https://gist.github.com/dbuezas/9306799
-  const g = container.append("g")
-    .attr("transform", `translate(${radius + margin.left}, ${radius + margin.top})`);
+  const g = container.selectAll("g.pie-group")
+    .data([null])
+    .join("g")
+    .attr("class", "pie-group")
+    .attr("transform", `translate(${radius + margin.left}, ${radius + margin.top + 20})`);
 
   const arc = d3.arc().innerRadius(0).outerRadius(radius);
 
@@ -81,6 +84,7 @@ function createPieChart(container, layout, margin, year) {
     .join("path")
     .attr("class", "pie-slice")
     .attr("fill", d => colorSlices(d.data[0]))
+    .attr("stroke", "white") 
     .each(function(d) {
       this._current = this._current || { startAngle: d.startAngle, endAngle: d.startAngle };
     })
@@ -92,6 +96,15 @@ function createPieChart(container, layout, margin, year) {
       return t => arc(i(t));
     });
 
+  g.selectAll("text.pie-title")
+  .data([null])
+  .join("text")
+  .attr("class", "pie-title")
+  .attr("x", 0)
+  .attr("y", -radius - 10)
+  .attr("text-anchor", "middle") 
+  .style("font-size", "8px")
+  .text(`Proportions of Genres for ${year}`)
 }
 
 export default createPieChart;
