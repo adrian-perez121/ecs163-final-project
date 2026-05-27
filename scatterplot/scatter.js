@@ -10,18 +10,11 @@ const GENRE_COLORS = d3.schemeTableau10;
 let state = {
   yField: "imdb_rating",
   genre: "All",
-  budgetRange: "all",
   allData: [],
   genres: [],
 };
 
 // Helpers
-function parseBudgetRange(range) {
-  if (range === "all") return [0, Infinity];
-  const [lo, hi] = range.split("-").map(Number);
-  return [lo, hi];
-}
-
 function getGenresFromRow(row) {
   return row.genres
     ? row.genres.split(",").map((g) => g.trim()).filter(Boolean)
@@ -33,18 +26,12 @@ function matchesGenre(row, genre) {
   return getGenresFromRow(row).includes(genre);
 }
 
-function matchesBudgetRange(row, range) {
-  const [lo, hi] = parseBudgetRange(range);
-  return row.budget >= lo && row.budget <= hi;
-}
-
 function filteredData() {
   return state.allData.filter(
     (d) =>
       d.budget > 0 &&
       d[state.yField] > 0 &&
-      matchesGenre(d, state.genre) &&
-      matchesBudgetRange(d, state.budgetRange)
+      matchesGenre(d, state.genre)
   );
 }
 
@@ -179,11 +166,15 @@ function render() {
     .range([0, innerW])
     .nice();
 
-  const yScale = d3
-    .scaleLinear()
-    .domain([0, d3.max(data, (d) => d[state.yField]) * 1.1 || 10])
-    .range([innerH, 0])
-    .nice();
+    const yScale = state.yField === "revenue"
+    ? d3.scaleLog()
+        .domain([1, 3_000_000_000])
+        .range([innerH, 0])
+        .clamp(true)
+    : d3.scaleLinear()
+        .domain([0, d3.max(data, (d) => d.imdb_rating) * 1.1 || 10])
+        .range([innerH, 0])
+        .nice();
 
   // Color by first genre
   const allGenres = [...new Set(data.flatMap(getGenresFromRow))].sort();
@@ -210,9 +201,9 @@ function render() {
 
   // Y Axis
   yAxisG.call(
-    d3.axisLeft(yScale).ticks(6).tickFormat((v) =>
-      state.yField === "revenue" ? formatRevenue(v) : v
-    )
+    d3.axisLeft(yScale)
+      .ticks(state.yField === "revenue" ? 8 : 6, state.yField === "revenue" ? ",.0s" : "")
+      .tickFormat((v) => state.yField === "revenue" ? formatRevenue(v) : v)
   );
 
   // Axis labels
@@ -220,7 +211,7 @@ function render() {
     .attr("x", innerW / 2)
     .attr("y", innerH + 55)
     .attr("text-anchor", "middle")
-    .text("Budget (USD, log scale)");
+    .text("Budget (USD)");
 
   yLabelEl
     .attr("transform", "rotate(-90)")
@@ -303,11 +294,6 @@ d3.csv(DATA_PATH, (row) => ({
 
   document.getElementById("y-axis-select").addEventListener("change", (e) => {
     state.yField = e.target.value;
-    render();
-  });
-
-  document.getElementById("budget-range-select").addEventListener("change", (e) => {
-    state.budgetRange = e.target.value;
     render();
   });
 
