@@ -3,12 +3,11 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0e0f13;
-  --surface: #16181f;
-  --border: #2a2d38;
-  --accent: #f5a623;
+  --bg: #ededed;
+  --surface: #ffffff;
+  --border: #ffffff;
   --accent2: #e05c5c;
-  --text-primary: #f0f0f0;
+  --text-primary: #0e0f13;
   --text-muted: #7a7f94;
   --dot-default: #4a9eff;
   --dot-hover: #f5a623;
