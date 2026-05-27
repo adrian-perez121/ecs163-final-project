@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Movie Scatterplot</title>
+  <link rel="stylesheet" href="scatter.css" />
+</head>
+<body>
+  <div id="controls">
+    <div id="title-block">
+      <h1 id="chart-title">Budget vs. IMDb Rating</h1>
+    </div>
+
+    <div id="filter-row">
+      <label>Genre:
+        <select id="genre-select">
+          <option value="All">All Genres</option>
+        </select>
+      </label>
+
+      <label>Y Axis:
+        <select id="y-axis-select">
+          <option value="imdb_rating">IMDb Rating</option>
+          <option value="revenue">Revenue</option>
+        </select>
+      </label>
+
+      <label>Budget Range:
+        <select id="budget-range-select">
+          <option value="all">All</option>
+          <option value="0-1000">$0 – $1K</option>
+          <option value="1000-1000000">$1K – $1M</option>
+          <option value="1000000-100000000">$1M – $100M</option>
+          <option value="100000000-999999999999">$100M+</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div id="chart-container">
+    <svg id="scatter-svg"></svg>
+    <div id="tooltip"></div>
+  </div>
+
+  <script type="module" src="scatter.js"></script>
+</body>
+</html>
