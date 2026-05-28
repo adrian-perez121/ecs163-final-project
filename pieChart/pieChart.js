@@ -1,3 +1,4 @@
+import {genreColor} from "../utils.js"
 const dataPath = "../output.csv";
 const data = await d3.csv(dataPath);
 const YearColumnName = "release_date";
@@ -59,15 +60,6 @@ function createPieChart(container, layout, margin, year) {
     });
 
   const dataReady = pie(Object.entries(pieData));
-  const colorSlices = d3
-    .scaleOrdinal()
-    .domain(sortedKeys)
-    .range(
-      d3.quantize(
-        (t) => d3.interpolateRainbow(t * 0.8 + 0.1),
-        sortedKeys.length,
-      ),
-    );
 
   // The slices
   // Help from https://gist.github.com/dbuezas/9306799
@@ -83,7 +75,7 @@ function createPieChart(container, layout, margin, year) {
     .data(dataReady, d => d.data[0])
     .join("path")
     .attr("class", "pie-slice")
-    .attr("fill", d => colorSlices(d.data[0]))
+    .attr("fill", d => genreColor(d.data[0]))
     .attr("stroke", "white") 
     .each(function(d) {
       this._current = this._current || { startAngle: d.startAngle, endAngle: d.startAngle };
