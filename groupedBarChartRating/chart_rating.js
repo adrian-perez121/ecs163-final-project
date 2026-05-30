@@ -1,4 +1,6 @@
-const TARGET_GENRE = "action";
+import { genreColor } from "./utils.js";
+
+const TARGET_GENRE = "Adventure";
 
 (function () {
   "use strict";
@@ -16,7 +18,6 @@ const TARGET_GENRE = "action";
 
   const categories = ["$ 0 - 1k", "$ 1.1k - 1 mil", "$ 1.1 mil - 100 mil", "$ 100 mil+"];
 
-  // Helper function to bucket release dates into eras
   function getEraStartYear(year) {
     if (!year) return null;
     if (year >= 1911 && year <= 1933) return 1911;
@@ -28,7 +29,6 @@ const TARGET_GENRE = "action";
     return null;
   }
 
-  // Helper function to bucket budgets into scale categories
   function getBudgetCategory(budget) {
     if (budget === null || budget === undefined || budget < 0) return null;
     if (budget <= 1000) return "$ 0 - 1k";
@@ -37,13 +37,25 @@ const TARGET_GENRE = "action";
     return "$ 100 mil+";
   }
 
-  // Helper to cleanly capitalize the current target genre for display titles
   const displayGenre = TARGET_GENRE.charAt(0).toUpperCase() + TARGET_GENRE.slice(1);
 
-  // 2. Generate Dynamic Text Headings and Layout Anchor Bounds via D3
+  // ── Derive 4 budget-tier colours from the genre's base colour ──────────────
+  // Looks up the genre in the shared rainbow scale from utils.js,
+  // then steps luminance light → dark across the 4 budget tiers.
+  function buildGenreColors(baseColorStr) {
+    const base = d3.hcl(baseColorStr);
+    const luminanceStops = [85, 65, 45, 25];
+    return luminanceStops.map(l => d3.hcl(base.h, base.c, l).formatHex());
+  }
+
+  // genreColor is the live ordinal scale imported from utils.js —
+  // it read output.csv itself so the domain matches your actual data exactly.
+  const genreKey = TARGET_GENRE.charAt(0).toUpperCase() + TARGET_GENRE.slice(1);
+  const baseColor = genreColor(genreKey);
+  const COLORS    = buildGenreColors(baseColor);
+
+  // 2. Generate Dynamic Text Headings
   const container = d3.select("#chart-container");
-  
-  // Clear layout elements to prevent duplicate painting on Live Server reload
   container.html("");
 
   container.append("h2")
@@ -57,25 +69,31 @@ const TARGET_GENRE = "action";
   const chartAnchor = container.append("div")
     .attr("id", "chart");
 
-  // 3. Asynchronously Load and Process output.csv
-  d3.csv("./output.csv").then(function (rawMovies) {
-    
-    // Parse strings from CSV columns into clean types
-    const processedMovies = rawMovies.map(d => {
-      return {
-        release_date: d.release_date ? +d.release_date : null,
-        budget: d.budget ? +d.budget : null,
-        imdb_rating: d.imdb_rating ? +d.imdb_rating : null,
-        genres: d.genres ? d.genres : ""
-      };
-    });
+  // Inject dynamic bar & tooltip colours
+  const styleEl = document.createElement("style");
+  styleEl.textContent = `
+    .bar--cat0 { fill: ${COLORS[0]}; }
+    .bar--cat1 { fill: ${COLORS[1]}; }
+    .bar--cat2 { fill: ${COLORS[2]}; }
+    .bar--cat3 { fill: ${COLORS[3]}; }
+    .tooltip strong { color: ${COLORS[0]}; }
+  `;
+  document.head.appendChild(styleEl);
 
-    // Pipeline: Filter using the dynamic variable string criteria and drop rows missing ratings
-    const filteredMovies = processedMovies.filter(d => 
+  // 3. Load and Process output.csv
+  d3.csv("./output.csv").then(function (rawMovies) {
+
+    const processedMovies = rawMovies.map(d => ({
+      release_date: d.release_date ? +d.release_date : null,
+      budget: d.budget ? +d.budget : null,
+      imdb_rating: d.imdb_rating ? +d.imdb_rating : null,
+      genres: d.genres ? d.genres : ""
+    }));
+
+    const filteredMovies = processedMovies.filter(d =>
       d.genres.toLowerCase().includes(TARGET_GENRE.toLowerCase()) && d.imdb_rating !== null
     );
 
-    // Multi-level Rollup mapping structure to aggregate mathematical means
     const aggregatedMap = d3.rollup(
       filteredMovies,
       v => d3.mean(v, d => d.imdb_rating),
@@ -83,34 +101,25 @@ const TARGET_GENRE = "action";
       d => getBudgetCategory(d.budget)
     );
 
-    // Flatten calculated map objects into array arrays for presentation binding
     const rows = [];
     eras.forEach(era => {
       categories.forEach((cat, ci) => {
         const eraMap = aggregatedMap.get(era);
         const avgValue = eraMap ? eraMap.get(cat) : undefined;
-        
         if (avgValue !== undefined && avgValue !== null) {
-          rows.push({
-            era: String(era),
-            cat: cat,
-            catIndex: ci,
-            value: avgValue
-          });
+          rows.push({ era: String(era), cat, catIndex: ci, value: avgValue });
         }
       });
     });
 
-    // 4. Chart Graphic Dimensions Layout
+    // 4. Chart Dimensions
     const margin = { top: 15, right: 200, bottom: 60, left: 70 };
     const totalW  = 820;
     const totalH  = 420;
-    const width   = totalW  - margin.left - margin.right;
-    const height  = totalH  - margin.top  - margin.bottom;
+    const width   = totalW - margin.left - margin.right;
+    const height  = totalH - margin.top  - margin.bottom;
 
-    const COLORS = ["#10ff00", "#00cf00", "#009f00", "#006000"];
-
-    // 5. Mapping Scales Context Setup
+    // 5. Scales
     const xEra = d3.scaleBand()
       .domain(eras.map(String))
       .range([0, width])
@@ -127,7 +136,7 @@ const TARGET_GENRE = "action";
       .range([height, 0])
       .nice();
 
-    // 6. SVG Generator Initialization
+    // 6. SVG
     const svg = chartAnchor.append("svg")
       .attr("viewBox", `0 0 ${totalW} ${totalH}`)
       .attr("preserveAspectRatio", "xMidYMid meet");
@@ -135,14 +144,11 @@ const TARGET_GENRE = "action";
     const g = svg.append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Background Gridlines: Cleansed of the outer bounding path box to eliminate the right line
     g.append("g")
       .attr("class", "grid")
       .call(d3.axisLeft(yScale).ticks(6).tickSize(-width).tickFormat(""))
-      .select(".domain")
-      .remove();
+      .select(".domain").remove();
 
-    // X Axis Layout
     g.append("g")
       .attr("class", "axis axis--x")
       .attr("transform", `translate(0,${height})`)
@@ -155,7 +161,6 @@ const TARGET_GENRE = "action";
       .attr("text-anchor", "middle")
       .text("Years");
 
-    // Y Axis Layout
     g.append("g")
       .attr("class", "axis axis--y")
       .call(d3.axisLeft(yScale).ticks(6).tickSizeOuter(0));
@@ -170,7 +175,7 @@ const TARGET_GENRE = "action";
 
     const tooltip = d3.select("body").append("div").attr("class", "tooltip");
 
-    // 7. Render Visual Bar Rectangles
+    // 7. Bars
     const eraGroups = g.selectAll(".era-group")
       .data(eras.map(String))
       .join("g")
@@ -179,7 +184,6 @@ const TARGET_GENRE = "action";
 
     eraGroups.each(function (era) {
       const eraData = rows.filter(d => d.era === era);
-
       d3.select(this)
         .selectAll(".bar")
         .data(eraData)
@@ -196,40 +200,28 @@ const TARGET_GENRE = "action";
             .style("left",  (event.pageX + 14) + "px")
             .style("top",   (event.pageY - 36) + "px");
         })
-        .on("mouseleave", function () {
-          tooltip.classed("visible", false);
-        });
+        .on("mouseleave", () => tooltip.classed("visible", false));
     });
 
-    // 8. Build Side Legend
-    const legendX = width + 20;
-    const legendY = 10;
-    const swatchSize = 14;
-    const rowH = 26;
-
+    // 8. Legend
     const legendG = g.append("g")
       .attr("class", "legend")
-      .attr("transform", `translate(${legendX},${legendY})`);
+      .attr("transform", `translate(${width + 20},10)`);
 
     categories.forEach((cat, i) => {
       const item = legendG.append("g")
         .attr("class", "legend-item")
-        .attr("transform", `translate(0,${i * rowH})`);
+        .attr("transform", `translate(0,${i * 26})`);
 
       item.append("rect")
-        .attr("width", swatchSize)
-        .attr("height", swatchSize)
-        .attr("fill", COLORS[i])
-        .attr("rx", 3);
+        .attr("width", 14).attr("height", 14)
+        .attr("fill", COLORS[i]).attr("rx", 3);
 
       item.append("text")
-        .attr("x", swatchSize + 8)
-        .attr("y", swatchSize / 2)
+        .attr("x", 22).attr("y", 7)
         .text(cat);
     });
 
-  }).catch(function (error) {
-    console.error("Error loading or processing output.csv file:", error);
-  });
+  }).catch(err => console.error("Error loading output.csv:", err));
 
 })();
