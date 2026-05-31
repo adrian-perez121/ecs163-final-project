@@ -5,6 +5,18 @@ const YearColumnName = "release_date";
 const width = window.innerWidth;
 const height = window.innerHeight;
 
+// Fetching our processed data that was already processed
+// this way we don't have to get the data on every page load
+const dataObject = await fetch("../data_processing/pie_data.json").then(
+  (r) => {
+    if (!r.ok) {
+      throw new Error(r.status);
+    }
+
+    return r.json();
+  },
+);
+
 /**
  * Creates a pie chart that shows the proportion of movies in different genres for the specified year
  * @param {Object} container - The element where the pie chart will be put
@@ -25,29 +37,9 @@ function createPieChart(container, layout, margin, year) {
   const processedData = {};
 
   // Preparing the data for the pie chart
-  const pieData = (() => {
-    const counts = new Map();
+  const pieData = Object.fromEntries(dataObject[year])
 
-    const parseGenres = (genres) => {
-      return genres.split(",").map((d) => d.trim());
-    };
-
-    for (const data of filteredData) {
-      const genres = parseGenres(data["genres"]);
-      for (const genre of genres) {
-        counts.set(genre, (counts.get(genre) || 0) + 1);
-      }
-    }
-
-    for (const [k, v] of counts) {
-      if (!k) {
-        continue;
-      }
-      processedData[k] = v;
-    }
-
-    return processedData;
-  })();
+  console.log(pieData)
 
   const radius = Math.min(layout.width / 2, layout.height / 2);
   const sortedKeys = Object.keys(pieData).sort((a, b) => d3.ascending(a, b));

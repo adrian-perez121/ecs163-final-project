@@ -18,10 +18,10 @@ const input = fs.createReadStream(new URL(dataPath, import.meta.url));
 const parser = input.pipe(parse({ columns: true, trim: true }));
 
 for await (const d of parser) {
-  let year = parseFloat(d.release_date);
+  const year = parseFloat(d.release_date);
   year = Math.floor(year);
 
-  const genres = (d.genres || "")
+  const genres = (d.genres)
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
