@@ -1,15 +1,16 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import { genreColor } from "../utils.js";
 
 // Config 
 const MARGIN = { top: 30, right: 30, bottom: 70, left: 90 };
-const DATA_PATH = "../output.csv";
-
-const GENRE_COLORS = d3.schemeTableau10;
+const DATA_PATH = "output.csv";
 
 // State
 let state = {
   yField: "imdb_rating",
   genre: "All",
+  budgetRange: "all",
+  yearRange: "all",
   allData: [],
   genres: [],
 };
@@ -26,12 +27,29 @@ function matchesGenre(row, genre) {
   return getGenresFromRow(row).includes(genre);
 }
 
+function parseBudgetRange(range) {
+  if (range === "all") return [0, Infinity];
+  const [lo, hi] = range.split("-").map(Number);
+  return [lo, hi];
+}
+
+function parseYearRange(range) {
+  if (range === "all") return [0, Infinity];
+  if (range.endsWith("+")) return [parseInt(range), Infinity];
+  const [lo, hi] = range.split("-").map(Number);
+  return [lo, hi];
+}
+
 function filteredData() {
-  return state.allData.filter(
-    (d) =>
-      d.budget > 0 &&
-      d[state.yField] > 0 &&
-      matchesGenre(d, state.genre)
+  const [bLo, bHi] = parseBudgetRange(state.budgetRange);
+  const [yLo, yHi] = parseYearRange(state.yearRange);
+
+  return state.allData.filter((d) =>
+    d.budget > 0 &&
+    d[state.yField] > 0 &&
+    matchesGenre(d, state.genre) &&
+    d.budget >= bLo && d.budget <= bHi &&
+    (d.release_date ? +d.release_date >= yLo && +d.release_date <= yHi : true)
   );
 }
 
@@ -128,7 +146,7 @@ function buildLegend(colorScale) {
     .map(
       (g, i) => `
     <div class="legend-item" data-genre="${g}">
-      <div class="legend-dot" style="background:${colorScale(g)}"></div>
+      <div class="legend-dot" style="background:${genreColor(g)}"></div>
       <span>${g}</span>
     </div>`
     )
@@ -175,10 +193,6 @@ function render() {
         .domain([0, d3.max(data, (d) => d.imdb_rating) * 1.1 || 10])
         .range([innerH, 0])
         .nice();
-
-  // Color by first genre
-  const allGenres = [...new Set(data.flatMap(getGenresFromRow))].sort();
-  const colorScale = d3.scaleOrdinal(GENRE_COLORS).domain(allGenres);
 
   // Grid
   gridG
@@ -233,7 +247,7 @@ function render() {
     .merge(dots)
     .attr("cx", (d) => xScale(d.budget))
     .attr("cy", (d) => yScale(d[state.yField]))
-    .attr("fill", (d) => colorScale(getGenresFromRow(d)[0] || "Unknown"))
+    .attr("fill", (d) => genreColor(getGenresFromRow(d)[0] || "Unknown"))
     .attr("opacity", 0.72)
     .attr("stroke", "none")
     .on("mouseover", function (event, d) {
@@ -285,6 +299,11 @@ d3.csv(DATA_PATH, (row) => ({
     opt.textContent = g;
     sel.appendChild(opt);
   });
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("genre"))       state.genre       = params.get("genre");
+  if (params.get("budgetRange")) state.budgetRange  = params.get("budgetRange");
+  if (params.get("yearRange"))   state.yearRange    = params.get("yearRange");
 
   // Wire controls
   sel.addEventListener("change", (e) => {

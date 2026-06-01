@@ -193,14 +193,25 @@ const TARGET_GENRE = "Adventure";
         .attr("width",  xCat.bandwidth())
         .attr("y",      d => yScale(d.value))
         .attr("height", d => height - yScale(d.value))
-        .on("mousemove", function (event, d) {
-          tooltip
-            .classed("visible", true)
-            .html(`<strong>${d.cat}</strong>Era: ${eraLabels[d.era] || d.era}<br/>Avg ${displayGenre} Rating: ${d.value.toFixed(2)}`)
-            .style("left",  (event.pageX + 14) + "px")
-            .style("top",   (event.pageY - 36) + "px");
+        .on("mouseleave", function () {
+          tooltip.classed("visible", false);
         })
-        .on("mouseleave", () => tooltip.classed("visible", false));
+        .on("click", function (event, d) {
+          const budgetMap = {
+            "$ 0 - 1k":            "0-1000",
+            "$ 1.1k - 1 mil":      "1000-1000000",
+            "$ 1.1 mil - 100 mil": "1000000-100000000",
+            "$ 100 mil+":          "100000000-999999999999"
+          };
+        
+          const params = new URLSearchParams({
+            genre:       displayGenre,
+            budgetRange: budgetMap[d.cat],
+            yearRange:   eraLabels[d.era] || d.era
+          });
+        
+          window.location.href = `../scatterplot/scatter.html?${params}`;
+        });
     });
 
     // 8. Legend
