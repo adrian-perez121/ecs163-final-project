@@ -1,5 +1,6 @@
 import { genreColor } from "../utils.js";
 import createPieChart from "../pieChart/pieChart.js";
+import {updatePCPByYear} from "../pcp_stuff/pcp.js";
 
 // Fetching our processed data that was already processed
 // this way we don't have to get the data on every page load
@@ -37,9 +38,9 @@ for (let y = minYear; y <= maxYear; y++) {
 }
 
 // SVG dimensions
-const width = 900;
-const height = 600;
-const margin = { top: 20, right: 30, bottom: 80, left: 80 };
+const width = 1300;
+const height = 700;
+const margin = { top: 30, right: 30, bottom: 80, left: 100 };
 
 // This is going to be used for zoom in functionality
 const outer = d3
@@ -107,7 +108,7 @@ const label = tooltip
   .append("div")
   .attr("class", "tooltip-label")
   .style("display", "none");
-const pieLayout = { left: 0, top: 0, width: 150, height: 150 };
+const pieLayout = { left: 0, top: 0, width: 100, height: 100 };
 const pieMargins = { left: 0, right: 0, top: 0, bottom: 0 };
 
 const pieContainer = tooltip
@@ -209,7 +210,7 @@ xAxis
   .attr("x", width / 2)
   .attr("y", 60)
   .attr("fill", "black")
-  .style("font-size", "18px")
+  .style("font-size", "25px")
   .text("Year");
 
 // Selecting the year titles
@@ -226,8 +227,9 @@ xAxis
     pieContainer.style("display", "block");
     tooltip
       .style("display", "block")
-      .style("left", event.pageX + 15 + "px")
-      .style("top", event.pageY + 50 + "px");
+      // new pie position to the right instead of bottom (bc of overlap)
+      .style("left", event.pageX + 60 + "px")
+      .style("top", event.pageY - 100 + "px");
 
     createPieChart(pieContainer, pieLayout, pieMargins, year + 1);
   })
@@ -236,8 +238,18 @@ xAxis
     const tick = event.target.closest(".tick");
     if (!tick) return;
     tooltip
-      .style("left", event.pageX + 15 + "px")
-      .style("top", event.pageY + 50 + "px");
+      .style("left", event.pageX + 60 + "px")
+      .style("top", event.pageY - 100 + "px");
+  })
+  .on("click", function (event) {
+    const tick = event.target.closest(".tick");
+    if(!tick) return;
+    const label = tick.querySelector("text").textContent;
+    const year = new Date(label).getFullYear();
+    if (Number.isNaN(year)) return;
+
+    console.log('Year clicked: ${year}. Filtering PCP...');
+    updatePCPByYear(year);
   })
   .on("mouseout", function (event) {
     // hide if mouse leaves the axis entirely
@@ -254,11 +266,11 @@ yAxis.call(d3.axisLeft(y));
 yAxis
   .append("text")
   .attr("x", -height / 2)
-  .attr("y", -60)
+  .attr("y", -80)
   .attr("fill", "black")
   .attr("transform", "rotate(-90)")
   .style("text-anchor", "middle")
-  .style("font-size", "18px")
+  .style("font-size", "25px")
   .text("Movie Count");
 
 // Legend

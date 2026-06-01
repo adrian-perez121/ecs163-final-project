@@ -1,7 +1,7 @@
 //margins
-const margin = { top: 60, right: 220, bottom: 60, left: 80 };
-const width = 1000 - margin.left - margin.right;
-const height = 500 - margin.top - margin.bottom;
+const margin = { top: 60, right: 40, bottom: 60, left: 80 };
+const width = 800 - margin.left - margin.right;
+const height = 400 - margin.top - margin.bottom;
 
 const dimensions = ["budget", "revenue", "rating", "popularity"];
 
@@ -66,16 +66,25 @@ function updatePCP(data) {
         .data(data, d => d.genre); // Bind using the genre name as a unique key
 
     // if updating lines, remove existing lines
-    lines.exit().remove();
+    //lines.exit().remove();
+    // smoothly fades out exiting lines
+    lines.exit()
+        .transition()
+        .duration(300)
+        .style("opacity", 0)
+        .remove();
 
     // add and merge new lines
-    lines.enter()
-        .append("path")
-        .attr("class", "genre-path")
-        .merge(lines)
-        .attr("d", pathCoordinates)
-        .style("stroke", d => colorScale(d.genre)); // Color code path by genre
 
+    //smooother transition to morph lines to new coord
+    lines.enter()
+    .append("path")
+    .attr("class", "genre-path")
+    .style("stroke", d => colorScale(d.genre))
+    .merge(lines)
+    .transition()
+    .duration(800)
+    .attr("d", pathCoordinates);
 
     const axes = axesGroup.selectAll(".axis-container")
         .data(dimensions);
@@ -93,73 +102,91 @@ function updatePCP(data) {
         .text(dim => dim.toUpperCase().replace("_", " "));
 
     // redraw axes
+    // smooth slide of axis scale
     axes.merge(axesEnter)
         .each(function (dim) {
-            d3.select(this).call(d3.axisLeft(yScales[dim]));
+            d3.select(this)
+                .transition()          // Smoothly shifts axis ticks up/down
+                .duration(800)         // Matches the line morph duration
+                .call(d3.axisLeft(yScales[dim]));
         });
 
 
-    // Legends
-    let legendG = mainGroup.selectAll(".legend-container-group").data([null]);
-    legendG = legendG.enter()
-        .append("g")
-        .attr("class", "legend-container-group")
-        .merge(legendG)
-        .attr("transform", `translate(${width + 40}, 20)`); // Positions it 40px past the final axis
+    // // Legends
+    // let legendG = mainGroup.selectAll(".legend-container-group").data([null]);
+    // legendG = legendG.enter()
+    //     .append("g")
+    //     .attr("class", "legend-container-group")
+    //     .merge(legendG)
+    //     .attr("transform", `translate(${width + 40}, 20)`); // Positions it 40px past the final axis
 
-    // Legend Header
-    let legendTitle = legendG.selectAll(".legend-title").data([null]);
-    legendTitle.enter()
-        .append("text")
-        .attr("class", "legend-title")
-        .attr("y", -15)
-        .style("font-weight", "bold")
-        .style("font-size", "14px")
-        .text("Genres");
+    // // Legend Header
+    // let legendTitle = legendG.selectAll(".legend-title").data([null]);
+    // legendTitle.enter()
+    //     .append("text")
+    //     .attr("class", "legend-title")
+    //     .attr("y", -15)
+    //     .style("font-weight", "bold")
+    //     .style("font-size", "14px")
+    //     .text("Genres");
 
-    // Data Join for the individual legend rows
-    const legendItems = legendG.selectAll(".legend-item")
-        .data(data, d => d.genre);
+    // // Data Join for the individual legend rows
+    // const legendItems = legendG.selectAll(".legend-item")
+    //     .data(data, d => d.genre);
 
-    legendItems.exit().remove();
+    // legendItems.exit().remove();
 
-    const legendEnter = legendItems.enter()
-        .append("g")
-        .attr("class", "legend-item");
+    // const legendEnter = legendItems.enter()
+    //     .append("g")
+    //     .attr("class", "legend-item");
 
-    legendEnter.append("rect")
-        .attr("width", 15)
-        .attr("height", 15)
-        .attr("rx", 3)
-        .attr("stroke", "#fff")
-        .attr("stroke-width", "1px");
+    // legendEnter.append("rect")
+    //     .attr("width", 15)
+    //     .attr("height", 15)
+    //     .attr("rx", 3)
+    //     .attr("stroke", "#fff")
+    //     .attr("stroke-width", "1px");
 
-    // text labels next to legend squares
-    legendEnter.append("text")
-        .attr("x", 25)
-        .attr("y", 12)
-        .style("font-size", "12px")
-        .style("alignment-baseline", "middle");
+    // // text labels next to legend squares
+    // legendEnter.append("text")
+    //     .attr("x", 25)
+    //     .attr("y", 12)
+    //     .style("font-size", "12px")
+    //     .style("alignment-baseline", "middle");
 
-    // animate legend appearance
-    legendItems.merge(legendEnter)
-        .transition().duration(700)
-        .attr("transform", (d, i) => `translate(0, ${i * 22})`);
+    // // animate legend appearance
+    // legendItems.merge(legendEnter)
+    //     .transition().duration(700)
+    //     .attr("transform", (d, i) => `translate(0, ${i * 22})`);
 
-    // Update colors and text 
-    legendG.selectAll(".legend-item rect")
-        .style("fill", d => colorScale(d.genre));
+    // // Update colors and text 
+    // legendG.selectAll(".legend-item rect")
+    //     .style("fill", d => colorScale(d.genre));
 
-    legendG.selectAll(".legend-item text")
-        .text(d => d.genre);
+    // legendG.selectAll(".legend-item text")
+    //     .text(d => d.genre);
 }
 
 // data processing
-d3.csv("output.csv").then(rawData => {
+//d3.csv("output.csv").then(rawData => {
+const rawData = await d3.csv("../output.csv");
+//let colorScale;
+
+// new function we are using in stream.js
+export function updatePCPByYear(year) {
 
     let genreTotals = {};
 
-    rawData.forEach(d => {
+    // Update the title dynamically based on the year passed in
+    const titleText = year ? `Movie Attribute Comparisons by Genre (${year+1})` : "Movie Attribute Comparisons by Genre (All Years)";
+    d3.select("#pcp-chart .chart-title").text(titleText);
+
+    const filteredData = year ? rawData.filter(d => {
+        const rowYear = new Date(d.release_date).getFullYear();
+        return rowYear === year || d.release_date == year;
+    }) : rawData;
+
+    filteredData.forEach(d => {
         // skip missing values
         if (!d.genres || !d.budget || !d.revenue || !d.imdb_rating || !d.popularity) return;
         if (d.genres.trim() === "" || d.imdb_rating.trim() === "" || d.popularity.trim() === "") return;
@@ -225,4 +252,5 @@ d3.csv("output.csv").then(rawData => {
 
     // update
     updatePCP(finalPCPData);
-});
+}
+updatePCPByYear();

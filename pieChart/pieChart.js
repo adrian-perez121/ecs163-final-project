@@ -95,7 +95,7 @@ function createPieChart(container, layout, margin, year) {
   .attr("x", 0)
   .attr("y", -radius - 10)
   .attr("text-anchor", "middle") 
-  .style("font-size", "8px")
+  .style("font-size", "7px")
   .text(`Proportions of Genres for ${year}`)
 }
 
