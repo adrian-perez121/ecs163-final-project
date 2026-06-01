@@ -1,6 +1,6 @@
 import { genreColor } from "../utils.js";
 import createPieChart from "../pieChart/pieChart.js";
-import {updatePCPByYear} from "../pcp_stuff/pcp.js";
+import { updatePCPByYear } from "../pcp_stuff/pcp.js";
 
 // Fetching our processed data that was already processed
 // this way we don't have to get the data on every page load
@@ -37,9 +37,13 @@ for (let y = minYear; y <= maxYear; y++) {
   chartData.push(entry);
 }
 
+// global year check variable (allows to revert back to default "all years" for pcp)
+let yearCheck = 0;
+let currentYear = 0;
+
 // SVG dimensions
 const width = 1300;
-const height = 700;
+const height = 500;
 const margin = { top: 30, right: 30, bottom: 80, left: 100 };
 
 // This is going to be used for zoom in functionality
@@ -108,7 +112,7 @@ const label = tooltip
   .append("div")
   .attr("class", "tooltip-label")
   .style("display", "none");
-const pieLayout = { left: 0, top: 0, width: 100, height: 100 };
+const pieLayout = { left: 0, top: 0, width: 170, height: 170 };
 const pieMargins = { left: 0, right: 0, top: 0, bottom: 0 };
 
 const pieContainer = tooltip
@@ -228,8 +232,8 @@ xAxis
     tooltip
       .style("display", "block")
       // new pie position to the right instead of bottom (bc of overlap)
-      .style("left", event.pageX + 60 + "px")
-      .style("top", event.pageY - 100 + "px");
+      .style("left", 0.75 * width + "px")
+      .style("top", 0.2 * height + "px");
 
     createPieChart(pieContainer, pieLayout, pieMargins, year + 1);
   })
@@ -238,18 +242,34 @@ xAxis
     const tick = event.target.closest(".tick");
     if (!tick) return;
     tooltip
-      .style("left", event.pageX + 60 + "px")
-      .style("top", event.pageY - 100 + "px");
+      .style("left", 0.75 * width + "px")
+      .style("top", 0.2 * height + "px");
   })
   .on("click", function (event) {
+
     const tick = event.target.closest(".tick");
-    if(!tick) return;
+    if (!tick) return;
     const label = tick.querySelector("text").textContent;
     const year = new Date(label).getFullYear();
     if (Number.isNaN(year)) return;
 
-    console.log('Year clicked: ${year}. Filtering PCP...');
-    updatePCPByYear(year);
+    if (year !== currentYear) {
+      yearCheck = 0;
+      console.log('Year clicked: ${year}. Filtering PCP...');
+      updatePCPByYear(year);
+    } else {
+      yearCheck++;
+      if (yearCheck % 2 === 1) {
+        console.log('Returning to Default Year: (All Years)');
+        updatePCPByYear();
+      } else {
+        console.log('Year clicked: ${year}. Filtering PCP...');
+        updatePCPByYear(year);
+      }
+    }
+
+    currentYear = year;
+
   })
   .on("mouseout", function (event) {
     // hide if mouse leaves the axis entirely

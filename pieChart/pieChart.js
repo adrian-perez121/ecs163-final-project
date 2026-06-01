@@ -1,4 +1,4 @@
-import {genreColor} from "../utils.js"
+import { genreColor } from "../utils.js"
 const dataPath = "../output.csv";
 const data = await d3.csv(dataPath);
 const YearColumnName = "release_date";
@@ -67,7 +67,7 @@ function createPieChart(container, layout, margin, year) {
     .data([null])
     .join("g")
     .attr("class", "pie-group")
-    .attr("transform", `translate(${radius + margin.left}, ${radius + margin.top + 20})`);
+    .attr("transform", `translate(${radius + margin.left + 10}, ${radius + margin.top + 20})`);
 
   const arc = d3.arc().innerRadius(0).outerRadius(radius);
 
@@ -76,27 +76,27 @@ function createPieChart(container, layout, margin, year) {
     .join("path")
     .attr("class", "pie-slice")
     .attr("fill", d => genreColor(d.data[0]))
-    .attr("stroke", "white") 
-    .each(function(d) {
+    .attr("stroke", "white")
+    .each(function (d) {
       this._current = this._current || { startAngle: d.startAngle, endAngle: d.startAngle };
     })
     .transition()
     .duration(500)
-    .attrTween("d", function(d) {
+    .attrTween("d", function (d) {
       const i = d3.interpolate(this._current, d);
       this._current = i(1);
       return t => arc(i(t));
     });
 
   g.selectAll("text.pie-title")
-  .data([null])
-  .join("text")
-  .attr("class", "pie-title")
-  .attr("x", 0)
-  .attr("y", -radius - 10)
-  .attr("text-anchor", "middle") 
-  .style("font-size", "7px")
-  .text(`Proportions of Genres for ${year}`)
+    .data([null])
+    .join("text")
+    .attr("class", "pie-title")
+    .attr("x", 0)
+    .attr("y", -radius - 10)
+    .attr("text-anchor", "middle")
+    .style("font-size", "13px")
+    .text(`Proportions of Genres for ${year}`)
 }
 
 export default createPieChart;
