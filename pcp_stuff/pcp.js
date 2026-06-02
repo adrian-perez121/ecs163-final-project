@@ -1,8 +1,8 @@
 import { genreColor } from "../utils.js";
 //margins
 const margin = { top: 60, right: 40, bottom: 60, left: 80 };
-const width = 800 - margin.left - margin.right;
-const height = 400 - margin.top - margin.bottom;
+const width = screen.width - margin.left - margin.right - 350;
+const height = 350 - margin.top - margin.bottom;
 
 const dimensions = ["budget", "revenue", "rating", "popularity"];
 
@@ -155,6 +155,7 @@ function updatePCP(data) {
         .style("font-weight", "bold")
         .style("fill", "#000000")
         .attr("y", height + 35)
+        .attr("dx", -30)
         .merge(labels)
         .text(dim => dim.toUpperCase().replace("_", " "));
 }

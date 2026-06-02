@@ -9,11 +9,10 @@ h2 {
 
 #visualization {
     display: flex;
+    padding: 0 15px;
     align-items: flex-start;
-    justify-content: center;
-    gap: 30px;
+    justify-content: space-between;
     max-width: 1600px;
-    margin: 0 auto;
 }
 
 #charts-column {
@@ -98,8 +97,8 @@ h2 {
 }
 
 #legend-container {
-    width: 160px;
-    margin-left: 320px;
+    width: 180px;
+    margin-right: 50px;
     max-height: 600px;
     overflow-y: auto;
     border: 1px solid #ccc;

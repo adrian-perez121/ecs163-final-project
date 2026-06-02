@@ -39,7 +39,7 @@ for (let y = minYear; y <= maxYear; y++) {
 // ==========================================
 const width = 1200;
 const height = 600;
-const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+const margin = { top: 20, right: 0, bottom: 50, left: 60 };
 
 d3.select("#chart-container").selectAll("*").remove();
 
@@ -179,9 +179,9 @@ function zoomed(event) {
 // ==========================================
 const tooltip = d3.select("#tooltip");
 tooltip.selectAll("svg").remove();
-const pieContainer = tooltip.append("svg").attr("width", 220).attr("height", 220); 
+const pieContainer = tooltip.append("svg").attr("width", 180).attr("height", 180); 
 
-const pieLayout = { left: 0, top: 0, width: 180, height: 180 };
+const pieLayout = { left: 0, top: 0, width: 140, height: 140 };
 const pieMargins = { top: 10, right: 10, bottom: 10, left: 10 };
 
 let currentYear = null;
@@ -191,8 +191,6 @@ xAxis
   .on("mouseover", function (event) {
     const tick = event.target.closest(".tick");
     if (!tick) return;
-    
-    pieContainer.selectAll("g").remove(); 
     
     const label = tick.querySelector("text").textContent;
     const year = parseInt(label, 10);
@@ -204,7 +202,12 @@ xAxis
     tooltip
       .style("display", "block")
       .style("left", tooltipX + "px")
-      .style("top", (event.pageY - 100) + "px");
+      .style("top", (event.pageY - 100) + "px")
+      .style("outline", "none")
+      .style("border", "none")
+      .style("stroke", "none")
+      .style("box-shadow", "2px 2px 8px gray")
+      .style("border-radius", "15px");
 
     createPieChart(pieContainer, pieLayout, pieMargins, year);
   })
@@ -216,8 +219,8 @@ xAxis
     const tooltipX = chartBox.right + window.scrollX + 20;
 
     tooltip
-      .style("left", tooltipX + "px")
-      .style("top", (event.pageY - 100) + "px");
+      .style("left", (event.pageX - (pieLayout.width + pieMargins.right + pieMargins.left)/2) + "px")
+      .style("top", (event.pageY - pieLayout.height - 80) + "px");
   })
   .on("click", function (event) {
     const tick = event.target.closest(".tick");
@@ -248,7 +251,6 @@ xAxis
     const related = event.relatedTarget;
     if (related && related.closest && related.closest(".stream-x-axis")) return;
     
-    pieContainer.selectAll("g").remove(); 
     tooltip.style("display", "none");
   });
 
