@@ -98,6 +98,7 @@
       filter: brightness(1.12);
     }
 
+    /* These are fallback colors  */
     .bar--cat0 { fill: #10ff00; }
     .bar--cat1 { fill: #00cf00; }
     .bar--cat2 { fill: #009f00; }
@@ -124,7 +125,7 @@
 
     .tooltip strong {
       display: block;
-      color: #10ff00;
+      color: #10ff00; /* fallback — overridden at runtime */
       margin-bottom: 2px;
     }
   </style>
@@ -132,7 +133,8 @@
 <body>
   <div class="card" id="chart-container"></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" defer></script>
-  <script src="./chart_rating.js" defer></script>
+  <!-- D3 must load before the module executes -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+  <script type="module" src="./chart_rating.js"></script>
 </body>
 </html>

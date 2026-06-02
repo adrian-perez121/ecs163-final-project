@@ -1,235 +1,176 @@
-const TARGET_GENRE = "action";
+import { genreColor } from "../utils.js"; 
 
-(function () {
-  "use strict";
-
-  // 1. Structure Configuration Bounds
-  const eras = [1911, 1934, 1957, 1980, 2003, 2026];
-  const eraLabels = {
-    "1911": "1911-1933",
-    "1934": "1934-1956",
-    "1957": "1957-1979",
-    "1980": "1980-2002",
-    "2003": "2003-2025",
-    "2026": "2026+"
-  };
-
-  const categories = ["$ 0 - 1k", "$ 1.1k - 1 mil", "$ 1.1 mil - 100 mil", "$ 100 mil+"];
-
-  // Helper function to bucket release dates into eras
-  function getEraStartYear(year) {
-    if (!year) return null;
-    if (year >= 1911 && year <= 1933) return 1911;
-    if (year >= 1934 && year <= 1956) return 1934;
-    if (year >= 1957 && year <= 1979) return 1957;
-    if (year >= 1980 && year <= 2002) return 1980;
-    if (year >= 2003 && year <= 2025) return 2003;
-    if (year >= 2026) return 2026;
-    return null;
-  }
-
-  // Helper function to bucket budgets into scale categories
-  function getBudgetCategory(budget) {
-    if (budget === null || budget === undefined || budget < 0) return null;
-    if (budget <= 1000) return "$ 0 - 1k";
-    if (budget <= 1000000) return "$ 1.1k - 1 mil";
-    if (budget <= 100000000) return "$ 1.1 mil - 100 mil";
-    return "$ 100 mil+";
-  }
-
-  // Helper to cleanly capitalize the current target genre for display titles
-  const displayGenre = TARGET_GENRE.charAt(0).toUpperCase() + TARGET_GENRE.slice(1);
-
-  // 2. Generate Dynamic Text Headings and Layout Anchor Bounds via D3
-  const container = d3.select("#chart-container");
-  
-  // Clear layout elements to prevent duplicate painting on Live Server reload
-  container.html("");
-
-  container.append("h2")
-    .attr("class", "chart-title")
-    .text(`Average IMDb Rating by Budget & Era — ${displayGenre}`);
-
-  container.append("div")
-    .attr("class", "chart-subtitle")
-    .text(`Filtered Scope: ${displayGenre} Genre Only`);
-
-  const chartAnchor = container.append("div")
-    .attr("id", "chart");
-
-  // 3. Asynchronously Load and Process output.csv
-  d3.csv("./output.csv").then(function (rawMovies) {
+export async function renderBarChart(genre, containerId) {
+    // 1. Clear previous chart
+    const container = d3.select(containerId);
+    container.selectAll("*").remove();
     
-    // Parse strings from CSV columns into clean types
-    const processedMovies = rawMovies.map(d => {
-      return {
-        release_date: d.release_date ? +d.release_date : null,
-        budget: d.budget ? +d.budget : null,
-        imdb_rating: d.imdb_rating ? +d.imdb_rating : null,
-        genres: d.genres ? d.genres : ""
-      };
-    });
+    // Add dynamic title
+    container.append("div")
+        .attr("class", "chart-title")
+        .text(`Average IMDb Rating by Budget & Era - ${genre}`);
 
-    // Pipeline: Filter using the dynamic variable string criteria and drop rows missing ratings
-    const filteredMovies = processedMovies.filter(d => 
-      d.genres.toLowerCase().includes(TARGET_GENRE.toLowerCase()) && d.imdb_rating !== null
-    );
+    // Retrieve the base color for the selected genre
+    const baseColor = genreColor(genre);
 
-    // Multi-level Rollup mapping structure to aggregate mathematical means
-    const aggregatedMap = d3.rollup(
-      filteredMovies,
-      v => d3.mean(v, d => d.imdb_rating),
-      d => getEraStartYear(d.release_date),
-      d => getBudgetCategory(d.budget)
-    );
+    // 2. Configuration Bounds
+    const eras = [1911, 1934, 1957, 1980, 2003, 2026];
+    const eraLabels = {
+        "1911": "1911-1933", "1934": "1934-1956", "1957": "1957-1979",
+        "1980": "1980-2002", "2003": "2003-2025", "2026": "2026+"
+    };
+    const categories = ["$ 0 - 1k", "$ 1.1k - 1 mil", "$ 1.1 mil - 100 mil", "$ 100 mil+"];
 
-    // Flatten calculated map objects into array arrays for presentation binding
-    const rows = [];
-    eras.forEach(era => {
-      categories.forEach((cat, ci) => {
-        const eraMap = aggregatedMap.get(era);
-        const avgValue = eraMap ? eraMap.get(cat) : undefined;
-        
-        if (avgValue !== undefined && avgValue !== null) {
-          rows.push({
-            era: String(era),
-            cat: cat,
-            catIndex: ci,
-            value: avgValue
-          });
-        }
-      });
-    });
+    function getEraStartYear(year) {
+        if (!year) return null;
+        if (year >= 1911 && year <= 1933) return 1911;
+        if (year >= 1934 && year <= 1956) return 1934;
+        if (year >= 1957 && year <= 1979) return 1957;
+        if (year >= 1980 && year <= 2002) return 1980;
+        if (year >= 2003 && year <= 2025) return 2003;
+        if (year >= 2026) return 2026;
+        return null;
+    }
 
-    // 4. Chart Graphic Dimensions Layout
-    const margin = { top: 15, right: 200, bottom: 60, left: 70 };
-    const totalW  = 820;
-    const totalH  = 420;
-    const width   = totalW  - margin.left - margin.right;
-    const height  = totalH  - margin.top  - margin.bottom;
+    function getBudgetCategory(budget) {
+        if (budget >= 0 && budget <= 1000) return categories[0];
+        if (budget > 1000 && budget <= 1000000) return categories[1];
+        if (budget > 1000000 && budget <= 100000000) return categories[2];
+        if (budget > 100000000) return categories[3];
+        return null;
+    }
 
-    const COLORS = ["#10ff00", "#00cf00", "#009f00", "#006000"];
+    // 3. Setup Dimensions
+    const margin = { top: 40, right: 140, bottom: 60, left: 60 };
+    const width = 800 - margin.left - margin.right;
+    const height = 400 - margin.top - margin.bottom;
 
-    // 5. Mapping Scales Context Setup
-    const xEra = d3.scaleBand()
-      .domain(eras.map(String))
-      .range([0, width])
-      .paddingInner(0.25)
-      .paddingOuter(0.15);
-
-    const xCat = d3.scaleBand()
-      .domain(categories)
-      .range([0, xEra.bandwidth()])
-      .padding(0.06);
-
-    const yScale = d3.scaleLinear()
-      .domain([0, 10])
-      .range([height, 0])
-      .nice();
-
-    // 6. SVG Generator Initialization
-    const svg = chartAnchor.append("svg")
-      .attr("viewBox", `0 0 ${totalW} ${totalH}`)
-      .attr("preserveAspectRatio", "xMidYMid meet");
+    // 4. Create SVG & Tooltip inside the passed containerId
+    const svg = container.append("svg")
+        .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+        .attr("preserveAspectRatio", "xMidYMid meet");
 
     const g = svg.append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+        .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Background Gridlines: Cleansed of the outer bounding path box to eliminate the right line
-    g.append("g")
-      .attr("class", "grid")
-      .call(d3.axisLeft(yScale).ticks(6).tickSize(-width).tickFormat(""))
-      .select(".domain")
-      .remove();
+    const tooltip = d3.select("body").append("div")
+        .attr("class", "bar-tooltip")
+        .style("opacity", 0);
 
-    // X Axis Layout
-    g.append("g")
-      .attr("class", "axis axis--x")
-      .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(xEra).tickFormat(d => eraLabels[d] || d).tickSizeOuter(0));
+    // 5. Load and Process Data
+    const rawData = await d3.csv("../output.csv");
+    
+    // Filter by passed genre
+    let genreData = rawData.filter(d => {
+        if (!d.genres) return false;
+        const genres = d.genres.split(",").map(g => g.trim());
+        return genres.includes(genre);
+    });
 
-    g.append("text")
-      .attr("class", "axis-label")
-      .attr("x", width / 2)
-      .attr("y", height + 48)
-      .attr("text-anchor", "middle")
-      .text("Years");
+    let binnedData = {};
+    eras.forEach(e => {
+        binnedData[e] = {};
+        categories.forEach(c => { binnedData[e][c] = { sum: 0, count: 0 }; });
+    });
 
-    // Y Axis Layout
-    g.append("g")
-      .attr("class", "axis axis--y")
-      .call(d3.axisLeft(yScale).ticks(6).tickSizeOuter(0));
+    genreData.forEach(d => {
+        const year = +d.release_date;
+        const budget = +d.budget;
+        const rating = +d.imdb_rating;
+        const era = getEraStartYear(year);
+        const cat = getBudgetCategory(budget);
 
-    g.append("text")
-      .attr("class", "axis-label")
-      .attr("transform", "rotate(-90)")
-      .attr("x", -(height / 2))
-      .attr("y", -54)
-      .attr("text-anchor", "middle")
-      .text("Average IMDb Rating");
+        if (era !== null && cat !== null && !isNaN(rating)) {
+            binnedData[era][cat].sum += rating;
+            binnedData[era][cat].count += 1;
+        }
+    });
 
-    const tooltip = d3.select("body").append("div").attr("class", "tooltip");
-
-    // 7. Render Visual Bar Rectangles
-    const eraGroups = g.selectAll(".era-group")
-      .data(eras.map(String))
-      .join("g")
-      .attr("class", "era-group")
-      .attr("transform", era => `translate(${xEra(era)},0)`);
-
-    eraGroups.each(function (era) {
-      const eraData = rows.filter(d => d.era === era);
-
-      d3.select(this)
-        .selectAll(".bar")
-        .data(eraData)
-        .join("rect")
-        .attr("class", d => `bar bar--cat${d.catIndex}`)
-        .attr("x",      d => xCat(d.cat))
-        .attr("width",  xCat.bandwidth())
-        .attr("y",      d => yScale(d.value))
-        .attr("height", d => height - yScale(d.value))
-        .on("mousemove", function (event, d) {
-          tooltip
-            .classed("visible", true)
-            .html(`<strong>${d.cat}</strong>Era: ${eraLabels[d.era] || d.era}<br/>Avg ${displayGenre} Rating: ${d.value.toFixed(2)}`)
-            .style("left",  (event.pageX + 14) + "px")
-            .style("top",   (event.pageY - 36) + "px");
-        })
-        .on("mouseleave", function () {
-          tooltip.classed("visible", false);
+    let chartData = [];
+    eras.forEach(era => {
+        categories.forEach((cat, index) => {
+            const stats = binnedData[era][cat];
+            chartData.push({
+                era: era, cat: cat, catIndex: index,
+                value: stats.count > 0 ? stats.sum / stats.count : 0,
+                count: stats.count
+            });
         });
     });
 
-    // 8. Build Side Legend
-    const legendX = width + 20;
-    const legendY = 10;
-    const swatchSize = 14;
-    const rowH = 26;
+    // 6. Scales & Axes
+    const xEra = d3.scaleBand().domain(eras).range([0, width]).padding(0.2);
+    const xCat = d3.scaleBand().domain(categories).range([0, xEra.bandwidth()]).padding(0.05);
+    const yScale = d3.scaleLinear().domain([0, 10]).range([height, 0]);
 
-    const legendG = g.append("g")
-      .attr("class", "legend")
-      .attr("transform", `translate(${legendX},${legendY})`);
+    // Gridlines
+    g.append("g").attr("class", "grid")
+        .call(d3.axisLeft(yScale).tickSize(-width).tickFormat(""));
 
-    categories.forEach((cat, i) => {
-      const item = legendG.append("g")
-        .attr("class", "legend-item")
-        .attr("transform", `translate(0,${i * rowH})`);
+    // X Axis
+    g.append("g").attr("class", "axis").attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(xEra).tickFormat(d => eraLabels[d] || d))
+        .append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", 40)
+        .style("text-anchor", "middle").text("Time Period (Era)");
 
-      item.append("rect")
-        .attr("width", swatchSize)
-        .attr("height", swatchSize)
-        .attr("fill", COLORS[i])
-        .attr("rx", 3);
+    // Y Axis
+    g.append("g").attr("class", "axis").call(d3.axisLeft(yScale).ticks(5))
+        .append("text").attr("class", "axis-label")
+        .attr("transform", "rotate(-90)").attr("x", -height / 2).attr("y", -40)
+        .style("text-anchor", "middle").text("Average IMDb Rating");
 
-      item.append("text")
-        .attr("x", swatchSize + 8)
-        .attr("y", swatchSize / 2)
-        .text(cat);
+    // 7. Draw Bars
+    const eraGroups = g.selectAll(".era-group")
+        .data(eras).enter().append("g").attr("class", "era-group")
+        .attr("transform", d => `translate(${xEra(d)},0)`);
+
+    eraGroups.each(function(era) {
+        const groupData = chartData.filter(d => d.era === era);
+        d3.select(this).selectAll(".bar")
+            .data(groupData).enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", d => xCat(d.cat))
+            .attr("width", xCat.bandwidth())
+            .attr("y", d => yScale(d.value))
+            .attr("height", d => height - yScale(d.value))
+            // NEW: Apply the genre color and scale the opacity based on the budget index
+            .attr("fill", baseColor)
+            .attr("opacity", d => 0.4 + (d.catIndex * 0.2)) 
+            .on("mouseover", function (event, d) {
+                tooltip.style("opacity", 1)
+                       .html(`<strong>${genre}</strong><br/>Era: ${eraLabels[d.era]}<br/>Budget: ${d.cat}<br/>Avg Rating: ${d.value.toFixed(1)}<br/>Movies: ${d.count}`);
+            })
+            .on("mousemove", function (event) {
+                tooltip.style("left", (event.pageX) + "px")
+                       .style("top", (event.pageY - 15) + "px");
+            })
+            .on("mouseleave", function () {
+                tooltip.style("opacity", 0);
+            })
+            .on("click", function (event, d) {
+                const budgetMap = {
+                    "$ 0 - 1k": "0-1000", "$ 1.1k - 1 mil": "1000-1000000",
+                    "$ 1.1 mil - 100 mil": "1000000-100000000", "$ 100 mil+": "100000000-999999999999"
+                };
+                const params = new URLSearchParams({
+                    genre: genre, budgetRange: budgetMap[d.cat], yearRange: eraLabels[d.era] || d.era
+                });
+                window.location.href = `../scatterplot/scatter.html?${params}`;
+            });
     });
 
-  }).catch(function (error) {
-    console.error("Error loading or processing output.csv file:", error);
-  });
+    // 8. Legend
+    const legendG = g.append("g").attr("class", "legend")
+        .attr("transform", `translate(${width + 20},10)`);
 
-})();
+    categories.forEach((cat, i) => {
+        const item = legendG.append("g").attr("transform", `translate(0, ${i * 24})`);
+        item.append("rect").attr("width", 14).attr("height", 14)
+            .attr("rx", 2)
+            // NEW: Apply the same base color and opacity to the legend blocks
+            .attr("fill", baseColor)
+            .attr("opacity", 0.4 + (i * 0.2)); 
+        item.append("text").attr("x", 24).attr("y", 11)
+            .text(cat).style("font-size", "12px").style("fill", "#4b5563");
+    });
+}

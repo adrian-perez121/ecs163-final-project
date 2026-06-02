@@ -3,7 +3,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #ededed;
+  --bg: #f4f7fa;
   --surface: #ffffff;
   --border: #ffffff;
   --accent2: #e05c5c;
