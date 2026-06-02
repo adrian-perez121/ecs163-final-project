@@ -1,138 +1,282 @@
-import {genreColor} from "../utils.js"
-d3.csv("output.csv").then(data => {
-    
-    // processes data
-    const yearGenreCounts = new Map();
-    const allGenres = new Set();
-    
-    data.forEach(d => {
-        
-        // extracts and processes Year
-        let year = parseFloat(d.release_date);
-        year = Math.floor(year);        
+import { genreColor } from "../utils.js";
+import createPieChart from "../pieChart/pieChart.js";
+import { updatePCPByYear } from "../pcp_stuff/pcp.js"; 
+import { renderBarChart } from "../groupedBarChartRating/chart_rating.js"
 
-        // splits Genres
-        const genres = d.genres.split(",").map(g => g.trim()).filter(g => g.length > 0);
-        
-        if (!yearGenreCounts.has(year)) {
-            yearGenreCounts.set(year, new Map());
+// ==========================================
+// 1. DATA FETCHING & PROCESSING
+// ==========================================
+const dataObject = await fetch("../data_processing/stream_data.json").then(
+  (r) => {
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  },
+);
+
+const yearGenreCounts = new Map();
+for (const [year, genreMapArray] of Object.entries(
+  JSON.parse(dataObject["yearGenreCounts"]),
+)) {
+  yearGenreCounts.set(parseInt(year), new Map(genreMapArray));
+}
+
+const genresList = JSON.parse(dataObject["genresList"]);
+const minYear = d3.min(Array.from(yearGenreCounts.keys()));
+const maxYear = d3.max(Array.from(yearGenreCounts.keys()));
+
+// Final aggregated array
+const chartData = [];
+for (let y = minYear; y <= maxYear; y++) {
+  const entry = { year: y };
+  genresList.forEach((g) => {
+    entry[g] = yearGenreCounts.has(y) ? yearGenreCounts.get(y).get(g) || 0 : 0;
+  });
+  chartData.push(entry);
+}
+
+// ==========================================
+// 2. SVG & CHART SETUP
+// ==========================================
+const width = 1200;
+const height = 600;
+const margin = { top: 20, right: 0, bottom: 50, left: 60 };
+
+d3.select("#chart-container").selectAll("*").remove();
+
+const svg = d3.select("#chart-container")
+  .append("svg")
+  .attr("viewBox", `0 0 ${width} ${height}`)
+  .style("max-width", "100%")
+  .style("height", "auto");
+
+svg.append("defs").append("clipPath")
+  .attr("id", "stream-clip")
+  .append("rect")
+  .attr("width", width - margin.left - margin.right)
+  .attr("height", height - margin.top - margin.bottom)
+  .attr("x", margin.left)
+  .attr("y", margin.top);
+
+const x = d3.scaleLinear()
+  .domain(d3.extent(chartData, d => d.year))
+  .range([margin.left, width - margin.right]);
+
+const stack = d3.stack().keys(genresList);
+const stackedData = stack(chartData);
+
+const maxVal = d3.max(stackedData, layer => d3.max(layer, d => d[1]));
+const y = d3.scaleLinear()
+  .domain([0, maxVal]).nice()
+  .range([height - margin.bottom, margin.top]);
+
+const area = d3.area()
+  .x(d => x(d.data.year))
+  .y0(d => y(d[0]))
+  .y1(d => y(d[1]));
+
+// ==========================================
+// 3. DRAWING THE STREAM GRAPH & BAR CHART CLICK EVENT
+// ==========================================
+const streamGroup = svg.append("g")
+  .attr("clip-path", "url(#stream-clip)");
+
+const layers = streamGroup.selectAll(".layer")
+  .data(stackedData)
+  .join("path")
+  .attr("class", "layer")
+  .attr("fill", d => genreColor(d.key))
+  .attr("d", area)
+  .style("cursor", "pointer")
+  .on("mouseover", function() {
+      d3.selectAll(".layer").style("opacity", 0.3); 
+      d3.select(this).style("opacity", 1);          
+  })
+  .on("mouseout", function() {
+      d3.selectAll(".layer").style("opacity", 1);   
+  })
+  .on("click", function (event, d) {
+    const clickedGenre = d.key; 
+    console.log(`Stream clicked: ${clickedGenre}. Opening bar chart...`);
+
+    d3.select("#chart-container")
+      .style("opacity", 0.05)
+      .style("pointer-events", "none"); 
+
+    renderBarChart(clickedGenre, "#bar-chart-inject");
+
+    d3.select("#bar-container")
+      .style("opacity", 1)
+      .style("pointer-events", "all");
+  });
+
+// ==========================================
+// 4. AXES & DYNAMIC ZOOM LOGIC
+// ==========================================
+const xAxis = svg.append("g")
+  .attr("class", "stream-x-axis")
+  .attr("transform", `translate(0,${height - margin.bottom})`)
+  .call(d3.axisBottom(x).tickFormat(d3.format("d"))); 
+
+const yAxis = svg.append("g")
+  .attr("transform", `translate(${margin.left},0)`)
+  .call(d3.axisLeft(y));
+
+yAxis.append("text")
+  .attr("x", -height / 2)
+  .attr("y", -45)
+  .attr("fill", "black")
+  .attr("transform", "rotate(-90)")
+  .style("text-anchor", "middle")
+  .style("font-size", "18px")
+  .text("Movie Count");
+
+const zoom = d3.zoom()
+  .scaleExtent([1, 10]) 
+  .translateExtent([[margin.left, 0], [width - margin.right, height]]) 
+  .extent([[margin.left, 0], [width - margin.right, height]])
+  .on("zoom", zoomed);
+
+svg.call(zoom);
+
+function zoomed(event) {
+  // 1. Rescale X Axis
+  const newX = event.transform.rescaleX(x);
+  xAxis.call(d3.axisBottom(newX).tickFormat(d3.format("d")));
+
+  // 2. Find visible boundaries
+  const [minVisible, maxVisible] = newX.domain();
+
+  // 3. Dynamically find the new maximum Y value in the visible area
+  let maxValVisible = 0;
+  stackedData.forEach(layer => {
+    layer.forEach(d => {
+      const year = d.data.year;
+      if (year >= minVisible && year <= maxVisible) {
+        if (d[1] > maxValVisible) {
+          maxValVisible = d[1];
         }
-        // aggregates 
-        genres.forEach(g => {
-            allGenres.add(g);
-            const counts = yearGenreCounts.get(year);
-            counts.set(g, (counts.get(g) || 0) + 1);
-        });
+      }
     });
+  });
 
-    const genresList = Array.from(allGenres).sort();
-    const minYear = d3.min(Array.from(yearGenreCounts.keys()));
-    const maxYear = d3.max(Array.from(yearGenreCounts.keys()));
+  if (maxValVisible === 0) maxValVisible = 1; // Fallback to avoid 0 domain
+
+  // 4. Rescale Y Axis based on new visible maximum
+  y.domain([0, maxValVisible]).nice();
+  yAxis.call(d3.axisLeft(y));
+
+  // 5. Redraw the areas utilizing BOTH updated axes
+  const newArea = d3.area()
+    .x(d => newX(d.data.year))
+    .y0(d => y(d[0]))
+    .y1(d => y(d[1]));
+
+  layers.attr("d", newArea);
+}
+
+// ==========================================
+// 5. TOOLTIP / PIE CHART / PCP INTERACTIONS
+// ==========================================
+const tooltip = d3.select("#tooltip");
+tooltip.selectAll("svg").remove();
+const pieContainer = tooltip.append("svg").attr("width", 180).attr("height", 180); 
+
+const pieLayout = { left: 0, top: 0, width: 140, height: 140 };
+const pieMargins = { top: 10, right: 10, bottom: 10, left: 10 };
+
+let currentYear = null;
+let yearCheck = 0;
+
+xAxis
+  .on("mouseover", function (event) {
+    const tick = event.target.closest(".tick");
+    if (!tick) return;
     
-    // final aggreagted array
-    const chartData = [];
-    for (let y = minYear; y <= maxYear; y++) {
-        const entry = { year: y };
-        genresList.forEach(g => {
-            entry[g] = yearGenreCounts.has(y) ? (yearGenreCounts.get(y).get(g) || 0) : 0;
-        });
-        chartData.push(entry);
+    const label = tick.querySelector("text").textContent;
+    const year = parseInt(label, 10);
+    if (Number.isNaN(year)) return;
+
+    const chartBox = document.getElementById("chart-container").getBoundingClientRect();
+    const tooltipX = chartBox.right + window.scrollX + 20;
+
+    tooltip
+      .style("display", "block")
+      .style("left", tooltipX + "px")
+      .style("top", (event.pageY - 100) + "px")
+      .style("outline", "none")
+      .style("border", "none")
+      .style("stroke", "none")
+      .style("box-shadow", "2px 2px 8px gray")
+      .style("border-radius", "15px");
+
+    createPieChart(pieContainer, pieLayout, pieMargins, year);
+  })
+  .on("mousemove", function (event) {
+    const tick = event.target.closest(".tick");
+    if (!tick) return;
+
+    const chartBox = document.getElementById("chart-container").getBoundingClientRect();
+    const tooltipX = chartBox.right + window.scrollX + 20;
+
+    tooltip
+      .style("left", (event.pageX - (pieLayout.width + pieMargins.right + pieMargins.left)/2) + "px")
+      .style("top", (event.pageY - pieLayout.height - 80) + "px");
+  })
+  .on("click", function (event) {
+    const tick = event.target.closest(".tick");
+    if(!tick) return;
+    
+    const label = tick.querySelector("text").textContent;
+    // Changed from new Date().getFullYear() to parseInt() to avoid timezone shifting!
+    const year = parseInt(label, 10); 
+    if (Number.isNaN(year)) return;
+
+    if (year !== currentYear) {
+      yearCheck = 0;
+      console.log(`Year clicked: ${year}. Filtering PCP...`);
+      updatePCPByYear(year);
+    } else {
+      yearCheck++;
+      if (yearCheck % 2 === 1) {
+        console.log('Returning to Default Year: (All Years)');
+        updatePCPByYear();
+      } else {
+        console.log(`Year clicked: ${year}. Filtering PCP...`);
+        updatePCPByYear(year);
+      }
     }
-
-    // SVG dimensions
-    const width = 900;
-    const height = 600;
-    const margin = { top: 20, right: 30, bottom: 80, left: 80 };
+    currentYear = year;
+  })
+  .on("mouseout", function (event) {
+    const related = event.relatedTarget;
+    if (related && related.closest && related.closest(".stream-x-axis")) return;
     
-    const svg = d3.select("#chart-container").append("svg")
-        .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
-        .attr("preserveAspectRatio", "xMidYMid meet")
-        .style("width", "100%")
-        .style("height", "auto")
-        .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
-        
-    // Stack Generator
-    // stackOffsetNone has it at Y=0 so Y-axis represents accurate combined movie counts
-    const stack = d3.stack()
-        .keys(genresList)
-        .offset(d3.stackOffsetNone) 
-        .order(d3.stackOrderNone);
-        
-    const series = stack(chartData);
-    
-    // sets scales
-    const x = d3.scaleLinear()
-        .domain(d3.extent(chartData, d => d.year))
-        .range([0, width]);
-        
-    const y = d3.scaleLinear()
-        .domain([0, d3.max(series, layer => d3.max(layer, d => d[1]))])
-        .range([height, 0]);
-        
-    // color scale
-    // const color = d3.scaleOrdinal()
-    //     .domain(genresList)
-    //     .range(d3.quantize(t => d3.interpolateRainbow(t * 0.8 + 0.1), genresList.length));
-        
-    const area = d3.area()
-        .x(d => x(d.data.year))
-        .y0(d => y(d[0]))
-        .y1(d => y(d[1]))
-        .curve(d3.curveBasis);
-                
-    const tooltip = d3.select("#tooltip");
-    
-    svg.selectAll("path")
-        .data(series)
-        .join("path")
-        .attr("fill", d => genreColor(d.key))
-        .attr("d", area)
-        .attr("opacity", 0.8)
-        .attr("stroke", "#fff")
-        .attr("stroke-width", 0.5)
-        .on("mouseover", function(event, d) {
-            d3.select(this).attr("opacity", 1).attr("stroke", "#000").attr("stroke-width", 1);
-            tooltip.style("display", "block").html(`<b>Genre:</b> ${d.key}`);
-        })
-        .on("mousemove", function(event) {
-            tooltip.style("left", (event.pageX + 15) + "px")
-                   .style("top", (event.pageY - 15) + "px");
-        })
-        .on("mouseout", function() {
-            d3.select(this).attr("opacity", 0.8).attr("stroke", "#fff").attr("stroke-width", 0.5);
-            tooltip.style("display", "none");
-        });
-        
-    svg.append("g")
-        .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x).tickFormat(d3.format("d")))
-        .append("text")
-        .attr("x", width / 2)
-        .attr("y", 60)
-        .attr("fill", "black")
-        .style("font-size", "18px")
-        .text("Year");
-        
-    svg.append("g")
-        .call(d3.axisLeft(y))
-        .append("text")
-        .attr("x", -height / 2)
-        .attr("y", -60)
-        .attr("fill", "black")
-        .attr("transform", "rotate(-90)")
-        .style("text-anchor", "middle")
-        .style("font-size", "18px")
-        .text("Movie Count");
+    tooltip.style("display", "none");
+  });
 
-    // Legend
-    const legendContainer = d3.select("#legend-items");
-    genresList.forEach(genre => {
-        const item = legendContainer.append("div").attr("class", "legend-item");
-        item.append("div")
-            .attr("class", "legend-color")
-            .style("background-color", genreColor(genre));
-        item.append("span").text(genre);
-    });
+// ==========================================
+// 6. LEGEND GENERATION
+// ==========================================
+const legendContainer = d3.select("#legend-items");
+legendContainer.selectAll("*").remove(); 
 
+genresList.forEach((genre) => {
+    const item = legendContainer.append("div").attr("class", "legend-item");
+    item.append("div")
+        .attr("class", "legend-color")
+        .style("background-color", genreColor(genre));
+    item.append("span").text(genre);
+});
+
+// ==========================================
+// 7. BACK BUTTON LOGIC (BAR CHART -> STREAM)
+// ==========================================
+d3.select("#close-bar-btn").on("click", () => {
+    d3.select("#bar-container")
+      .style("opacity", 0)
+      .style("pointer-events", "none");
+    
+    d3.select("#chart-container")
+      .style("opacity", 1)
+      .style("pointer-events", "all");
 });

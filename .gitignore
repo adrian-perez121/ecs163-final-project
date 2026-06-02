@@ -5,3 +5,7 @@
 
 # macOS system file
 .DS_Store
+
+/node_modules
+
+all_movies_after_1920.csv

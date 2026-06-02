@@ -1,7 +1,8 @@
+import { genreColor } from "../utils.js";
 //margins
-const margin = { top: 60, right: 220, bottom: 60, left: 80 };
-const width = 1000 - margin.left - margin.right;
-const height = 500 - margin.top - margin.bottom;
+const margin = { top: 60, right: 40, bottom: 60, left: 80 };
+const width = screen.width - margin.left - margin.right - 350;
+const height = 350 - margin.top - margin.bottom;
 
 const dimensions = ["budget", "revenue", "rating", "popularity"];
 
@@ -34,10 +35,6 @@ const xScale = d3.scalePoint()
     .range([0, width])
     .domain(dimensions);
 
-// Color Scale: Distinct colors for our different movie genres
-
-// Keep a global placeholder variable
-let colorScale;
 //update data function
 
 function updatePCP(data) {
@@ -65,17 +62,59 @@ function updatePCP(data) {
     const lines = linesGroup.selectAll(".genre-path")
         .data(data, d => d.genre); // Bind using the genre name as a unique key
 
-    // if updating lines, remove existing lines
-    lines.exit().remove();
+    // smoothly fades out exiting lines
+    lines.exit()
+        .transition()
+        .duration(500)
+        .style("opacity", 0)
+        .remove();
 
     // add and merge new lines
+
+    //smoother transition to morph lines to new coord
     lines.enter()
         .append("path")
         .attr("class", "genre-path")
+        .style("fill", "none")
+        .style("stroke-width", "2.5px")
+        .style("opacity", 0) // Start invisible for fade-in
+        .style("stroke", d => genreColor(d.genre)) // Standardized color synchronization
         .merge(lines)
+        .transition()
+        .duration(500)
         .attr("d", pathCoordinates)
-        .style("stroke", d => colorScale(d.genre)); // Color code path by genre
+        .style("opacity", 0.8);
 
+    const pcp_tooltip = d3.select("#pcp-tooltip");
+
+    linesGroup.selectAll(".genre-path")
+        .on("mouseover", function (event, d) {
+            pcp_tooltip.style("display", "block");
+            // formatting for attributes
+            const moneyFormat = d3.format(",.0f");
+            const numberFormat = d3.format(".1f");
+
+            pcp_tooltip.html(`
+                <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px; color: ${genreColor(d.genre)};">
+                    Genre: ${d.genre}
+                </div>
+                <hr style="border: 0; border-top: 1px solid #ffffff; margin: 4px 0;"/>
+                <strong>Avg Budget:</strong> $${moneyFormat(d.budget)}<br/>
+                <strong>Avg Revenue:</strong> $${moneyFormat(d.revenue)}<br/>
+                <strong>Avg Rating:</strong> ${numberFormat(d.rating)}<br/>
+                <strong>Avg Popularity:</strong> ${numberFormat(d.popularity)}
+            `);
+        })
+        .on("mousemove", function (event) {
+            // make tooltip for pcp next to cursor
+            pcp_tooltip
+                .style("left", (event.pageX + 15) + "px")
+                .style("top", (event.pageY - 15) + "px");
+        })
+        .on("mouseleave", function () {
+            // remove tooltip if leaving pcp line
+            pcp_tooltip.style("display", "none")
+        });
 
     const axes = axesGroup.selectAll(".axis-container")
         .data(dimensions);
@@ -83,83 +122,63 @@ function updatePCP(data) {
     const axesEnter = axes.enter()
         .append("g")
         .attr("class", "axis-container")
+
+    const axesMerged = axes.merge(axesEnter) // preparing for axes label formatting
         .attr("transform", dim => `translate(${xScale(dim)}, 0)`);
 
+    axes.exit().remove();
+
     // axes labels
-    axesEnter.append("text")
+    axesMerged.each(function (dim) {
+        const axisFormat = d3.axisLeft(yScales[dim]);
+
+        // if the attribute is budget or revenue, format tick values to be in the form $X.M (M = Millions)
+        if (dim === "budget" || dim === "revenue") {
+            axisFormat.tickFormat(d3.format("$.2s"));
+        }
+        // render axes back on screen
+        d3.select(this)
+            .transition()
+            .duration(800)
+            .call(axisFormat);
+    });
+
+    const labels = axesMerged.selectAll(".axis-label")
+        .data(dim => [dim]);
+
+    labels.enter()
+        .append("text")
         .attr("class", "axis-label")
         .style("text-anchor", "middle")
-        .attr("y", -15)
-        .text(dim => dim.toUpperCase().replace("_", " "));
-
-    // redraw axes
-    axes.merge(axesEnter)
-        .each(function (dim) {
-            d3.select(this).call(d3.axisLeft(yScales[dim]));
-        });
-
-
-    // Legends
-    let legendG = mainGroup.selectAll(".legend-container-group").data([null]);
-    legendG = legendG.enter()
-        .append("g")
-        .attr("class", "legend-container-group")
-        .merge(legendG)
-        .attr("transform", `translate(${width + 40}, 20)`); // Positions it 40px past the final axis
-
-    // Legend Header
-    let legendTitle = legendG.selectAll(".legend-title").data([null]);
-    legendTitle.enter()
-        .append("text")
-        .attr("class", "legend-title")
-        .attr("y", -15)
+        .style("font-family", "sans-serif")
+        .style("font-size", "13px")
         .style("font-weight", "bold")
-        .style("font-size", "14px")
-        .text("Genres");
-
-    // Data Join for the individual legend rows
-    const legendItems = legendG.selectAll(".legend-item")
-        .data(data, d => d.genre);
-
-    legendItems.exit().remove();
-
-    const legendEnter = legendItems.enter()
-        .append("g")
-        .attr("class", "legend-item");
-
-    legendEnter.append("rect")
-        .attr("width", 15)
-        .attr("height", 15)
-        .attr("rx", 3)
-        .attr("stroke", "#fff")
-        .attr("stroke-width", "1px");
-
-    // text labels next to legend squares
-    legendEnter.append("text")
-        .attr("x", 25)
-        .attr("y", 12)
-        .style("font-size", "12px")
-        .style("alignment-baseline", "middle");
-
-    // animate legend appearance
-    legendItems.merge(legendEnter)
-        .transition().duration(700)
-        .attr("transform", (d, i) => `translate(0, ${i * 22})`);
-
-    // Update colors and text 
-    legendG.selectAll(".legend-item rect")
-        .style("fill", d => colorScale(d.genre));
-
-    legendG.selectAll(".legend-item text")
-        .text(d => d.genre);
+        .style("fill", "#000000")
+        .attr("y", height + 35)
+        .attr("dx", -30)
+        .merge(labels)
+        .text(dim => dim.toUpperCase().replace("_", " "));
 }
 
-// data processing
-d3.csv("output.csv").then(rawData => {
+// rawData form outputCSV
+const rawData = await d3.csv("../output.csv");
+
+// new function we are using in stream.js
+export function updatePCPByYear(year) {
 
     let genreTotals = {};
 
-    rawData.forEach(d => {
+    // Update the title dynamically based on the year passed in
+    const titleText = year ? `Movie Attribute Comparisons by Genre (${year})` : "Movie Attribute Comparisons by Genre (All Years)";
+    d3.select("#pcp-chart .chart-title").text(titleText);
+
+    const filteredData = year ? rawData.filter(d => {
+        if (!d.release_date) return false;
+        const rowYear = parseInt(d.release_date.slice(0, 4), 10);
+        return rowYear === (year + 1);
+    }) : rawData;
+
+    filteredData.forEach(d => {
         // skip missing values
         if (!d.genres || !d.budget || !d.revenue || !d.imdb_rating || !d.popularity) return;
         if (d.genres.trim() === "" || d.imdb_rating.trim() === "" || d.popularity.trim() === "") return;
@@ -217,12 +236,7 @@ d3.csv("output.csv").then(rawData => {
     console.log("Processed PCP Data Array:", finalPCPData);
     finalPCPData.sort((a, b) => a.genre.localeCompare(b.genre));
 
-
-    const sortedGenresList = finalPCPData.map(d => d.genre);
-    colorScale = d3.scaleOrdinal()
-        .domain(sortedGenresList)
-        .range(d3.quantize(t => d3.interpolateRainbow(t * 0.8 + 0.1), sortedGenresList.length));
-
     // update
     updatePCP(finalPCPData);
-});
+}
+updatePCPByYear();

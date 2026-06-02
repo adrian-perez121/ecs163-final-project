@@ -1,45 +1,126 @@
 body {
     font-family: sans-serif;
-    margin: 20px;
+    margin: 30px;
 }
+
 h2 {
     text-align: center;
 }
+
 #visualization {
     display: flex;
+    padding: 0 15px;
     align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
+    justify-content: space-between;
+    max-width: 1600px;
 }
-#chart-container {
-    flex: 1 1 600px;
-    min-width: 300px;
+
+#charts-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Gives a clean, small gap between the two charts */
+    flex: 1;
+    min-width: 550px;
     max-width: 900px;
+}
+
+/* --- NEW WRAPPER AND BAR STYLES --- */
+#chart-wrapper {
+    position: relative;
     width: 100%;
 }
+
+#chart-container {
+    width: 100%;
+    transition: opacity 0.5s ease-in-out;
+}
+
+#bar-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease-in-out;
+    background-color: rgba(255, 255, 255, 0.95);
+    z-index: 10;
+    padding-top: 10px;
+    
+    /* Flexbox constraints to prevent overflow */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+#close-bar-btn {
+    padding: 8px 16px;
+    margin-left: 60px;
+    margin-bottom: 5px; 
+    cursor: pointer;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-weight: bold;
+    
+    /* Prevents the button from stretching */
+    align-self: flex-start;
+    flex-shrink: 0;
+}
+
+#close-bar-btn:hover {
+    background-color: #e0e0e0;
+}
+/* ----------------------------------- */
+
+#pcp-container {
+    width: 100%;
+    max-width: 950px;
+    margin: 0 auto;
+}
+
+.genre-path {
+    stroke-width: 2.5px;
+    opacity: 0.8;
+    transition: opacity 0.15s ease-in-out, stroke-width 0.15s ease-in-out;
+}
+
+.lines-group:hover .genre-path {
+    opacity: 0.15 !important;
+}
+
+.lines-group .genre-path:hover {
+    opacity: 1.0 !important;
+    stroke-width: 5.5px !important;
+    cursor: pointer;
+}
+
 #legend-container {
-    width: 250px;
-    margin-left: 20px;
+    width: 180px;
+    margin-right: 50px;
     max-height: 600px;
     overflow-y: auto;
     border: 1px solid #ccc;
     padding: 10px;
     background-color: #f9f9f9;
+    flex-shrink: 0;
 }
+
 .legend-item {
     display: flex;
     align-items: center;
     margin-bottom: 6px;
     font-size: 14px;
 }
+
 .legend-color {
     width: 16px;
     height: 16px;
     margin-right: 10px;
     border-radius: 3px;
 }
+
 .tooltip {
     position: absolute;
     background: white;
@@ -48,7 +129,5 @@ h2 {
     pointer-events: none;
     display: none;
     font-size: 12px;
-}
-.tick text {
-    font-size: 14px;
+    z-index: 9999;
 }

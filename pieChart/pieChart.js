@@ -1,12 +1,25 @@
+import { genreColor } from "../utils.js"
 const dataPath = "../output.csv";
 const data = await d3.csv(dataPath);
 const YearColumnName = "release_date";
 const width = window.innerWidth;
 const height = window.innerHeight;
 
+// Fetching our processed data that was already processed
+// this way we don't have to get the data on every page load
+const dataObject = await fetch("../data_processing/pie_data.json").then(
+  (r) => {
+    if (!r.ok) {
+      throw new Error(r.status);
+    }
+
+    return r.json();
+  },
+);
+
 /**
  * Creates a pie chart that shows the proportion of movies in different genres for the specified year
- * @param {d3.Selection} container - The element where the pie chart will be put
+ * @param {Object} container - The element where the pie chart will be put
  * @param {Object} layout - Contains information for where the pie chart will be positioned along with height and width
  * @param {Number} layout.left - Where the the pie chart will begin on the x axis
  * @param {Number} layout.top - Where the pie chart will begin on the y axis
@@ -24,29 +37,9 @@ function createPieChart(container, layout, margin, year) {
   const processedData = {};
 
   // Preparing the data for the pie chart
-  const pieData = (() => {
-    const counts = new Map();
+  const pieData = Object.fromEntries(dataObject[year])
 
-    const parseGenres = (genres) => {
-      return genres.split(",").map((d) => d.trim());
-    };
-
-    for (const data of filteredData) {
-      const genres = parseGenres(data["genres"]);
-      for (const genre of genres) {
-        counts.set(genre, (counts.get(genre) || 0) + 1);
-      }
-    }
-
-    for (const [k, v] of counts) {
-      if (!k) {
-        continue;
-      }
-      processedData[k] = v;
-    }
-
-    return processedData;
-  })();
+  console.log(pieData)
 
   const radius = Math.min(layout.width / 2, layout.height / 2);
   const sortedKeys = Object.keys(pieData).sort((a, b) => d3.ascending(a, b));
@@ -59,47 +52,49 @@ function createPieChart(container, layout, margin, year) {
     });
 
   const dataReady = pie(Object.entries(pieData));
-  const colorSlices = d3
-    .scaleOrdinal()
-    .domain(sortedKeys)
-    .range(
-      d3.quantize(
-        (t) => d3.interpolateRainbow(t * 0.8 + 0.1),
-        sortedKeys.length,
-      ),
-    );
 
   // The slices
   // Help from https://gist.github.com/dbuezas/9306799
-  container
-    .selectAll("path.pie-slice")
-    .data(dataReady)
+  const g = container.selectAll("g.pie-group")
+    .data([null])
+    .join("g")
+    .attr("class", "pie-group")
+    .attr("transform", `translate(${radius + margin.left + 10}, ${radius + margin.top + 20})`);
+
+  const arc = d3.arc().innerRadius(0).outerRadius(radius);
+
+  g.selectAll("path.pie-slice")
+    .data(dataReady, d => d.data[0])
     .join("path")
     .attr("class", "pie-slice")
-    .attr("d", d3.arc().innerRadius(0).outerRadius(radius))
-    .attr("fill", (d) => colorSlices(d.data[0]))
-    .attr(
-      "transform",
-      `translate(${radius + margin.left},  ${radius + margin.top})`,
-    );
-
-  container
-    .selectAll("text.pie-labels")
-    .data(dataReady)
-    .join("text")
-    .attr("class", "pie-labels")
-    .text((d) => d.data[0])
-    .attr("transform", (d) => {
-      const mid = (d.startAngle + d.endAngle) / 2 - Math.PI / 2;
-      const r = radius * 1.4; // outer radius
-      return `translate(${radius + margin.left + Math.cos(mid) * r}, ${radius + margin.top + Math.sin(mid) * r})`;
+    .attr("fill", d => genreColor(d.data[0]))
+    .attr("stroke", "white")
+    .each(function (d) {
+      this._current = this._current || { startAngle: d.startAngle, endAngle: d.startAngle };
     })
+    .transition()
+    .duration(500)
+    .attrTween("d", function (d) {
+      const i = d3.interpolate(this._current, d);
+      this._current = i(1);
+      return t => arc(i(t));
+    });
+
+  g.selectAll("text.pie-title")
+    .data([null])
+    .join("text")
+    .attr("class", "pie-title")
+    .attr("x", 0)
+    .attr("y", -radius - 10)
     .attr("text-anchor", "middle")
-    .attr("fill", (d) => colorSlices(d.data[0]));
+    .style("font-size", "13px")
+    .text(`Proportions of Genres for ${year}`)
 }
 
-const svg = d3.select("svg");
-const margins = { left: 80, right: 20, top: 80, bottom: 50 };
-const layout = { left: 0, top: 0, width: 200, height: 200 };
+export default createPieChart;
 
-createPieChart(svg, layout, margins, 1990);
+// const svg = d3.select("svg");
+// const margins = { left: 80, right: 20, top: 80, bottom: 50 };
+// const layout = { left: 0, top: 0, width: 200, height: 200 };
+
+// createPieChart(svg, layout, margins, 1990);
