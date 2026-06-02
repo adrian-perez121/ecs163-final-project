@@ -1,15 +1,14 @@
 import { genreColor } from "../utils.js";
 import createPieChart from "../pieChart/pieChart.js";
-import { updatePCPByYear } from "../pcp_stuff/pcp.js";
+import { updatePCPByYear } from "../pcp_stuff/pcp.js"; 
+import { renderBarChart } from "../groupedBarChartRating/chart_rating.js"
 
-// Fetching our processed data that was already processed
-// this way we don't have to get the data on every page load
+// ==========================================
+// 1. DATA FETCHING & PROCESSING
+// ==========================================
 const dataObject = await fetch("../data_processing/stream_data.json").then(
   (r) => {
-    if (!r.ok) {
-      throw new Error(r.status);
-    }
-
+    if (!r.ok) throw new Error(r.status);
     return r.json();
   },
 );
@@ -22,12 +21,10 @@ for (const [year, genreMapArray] of Object.entries(
 }
 
 const genresList = JSON.parse(dataObject["genresList"]);
-
-// const genresList = Array.from(allGenres).sort();
 const minYear = d3.min(Array.from(yearGenreCounts.keys()));
 const maxYear = d3.max(Array.from(yearGenreCounts.keys()));
 
-// final aggreagted array
+// Final aggregated array
 const chartData = [];
 for (let y = minYear; y <= maxYear; y++) {
   const entry = { year: y };
@@ -37,225 +34,203 @@ for (let y = minYear; y <= maxYear; y++) {
   chartData.push(entry);
 }
 
-// global year check variable (allows to revert back to default "all years" for pcp)
-let yearCheck = 0;
-let currentYear = 0;
+// ==========================================
+// 2. SVG & CHART SETUP
+// ==========================================
+const width = 1200;
+const height = 600;
+const margin = { top: 20, right: 30, bottom: 50, left: 60 };
 
-// SVG dimensions
-const width = 1300;
-const height = 500;
-const margin = { top: 30, right: 30, bottom: 80, left: 100 };
+d3.select("#chart-container").selectAll("*").remove();
 
-// This is going to be used for zoom in functionality
-const outer = d3
-  .select("#chart-container")
+const svg = d3.select("#chart-container")
   .append("svg")
-  .attr(
-    "viewBox",
-    `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`,
-  )
-  .attr("preserveAspectRatio", "xMidYMid meet")
-  .style("width", "100%")
+  .attr("viewBox", `0 0 ${width} ${height}`)
+  .style("max-width", "100%")
   .style("height", "auto");
 
-// Where everything will appended
-const svg = outer
-  .append("g")
-  .attr("transform", `translate(${margin.left},${margin.top})`);
-
-// This defines the region that is going to clip
-const defs = outer.append("defs");
-defs
-  .append("clipPath")
-  .attr("id", "chart-clip")
+svg.append("defs").append("clipPath")
+  .attr("id", "stream-clip")
   .append("rect")
-  .attr("x", 0)
-  .attr("y", 0)
-  .attr("width", width)
-  .attr("height", height);
+  .attr("width", width - margin.left - margin.right)
+  .attr("height", height - margin.top - margin.bottom)
+  .attr("x", margin.left)
+  .attr("y", margin.top);
 
-// group for stacked-area layers (will be clipped), this applies the clip to the group
-const layersG = svg.append("g").attr("clip-path", "url(#chart-clip)");
+const x = d3.scaleLinear()
+  .domain(d3.extent(chartData, d => d.year))
+  .range([margin.left, width - margin.right]);
 
-// Stack Generator
-// stackOffsetNone has it at Y=0 so Y-axis represents accurate combined movie counts
-const stack = d3
-  .stack()
-  .keys(genresList)
-  .offset(d3.stackOffsetNone)
-  .order(d3.stackOrderNone);
+const stack = d3.stack().keys(genresList);
+const stackedData = stack(chartData);
 
-const series = stack(chartData);
+const maxVal = d3.max(stackedData, layer => d3.max(layer, d => d[1]));
+const y = d3.scaleLinear()
+  .domain([0, maxVal]).nice()
+  .range([height - margin.bottom, margin.top]);
 
-// sets scales
-const x = d3
-  .scaleLinear()
-  .domain(d3.extent(chartData, (d) => d.year))
-  .range([0, width]);
+const area = d3.area()
+  .x(d => x(d.data.year))
+  .y0(d => y(d[0]))
+  .y1(d => y(d[1]));
 
-const y = d3
-  .scaleLinear()
-  .domain([0, d3.max(series, (layer) => d3.max(layer, (d) => d[1]))])
-  .range([height, 0]);
+// ==========================================
+// 3. DRAWING THE STREAM GRAPH & BAR CHART CLICK EVENT
+// ==========================================
+const streamGroup = svg.append("g")
+  .attr("clip-path", "url(#stream-clip)");
 
-const area = d3
-  .area()
-  .x((d) => x(d.data.year))
-  .y0((d) => y(d[0]))
-  .y1((d) => y(d[1]))
-  .curve(d3.curveBasis);
-
-// Tooltip has to handle the pie chart and regular text now
-// They will be toggled on and off depending on where you are hovering
-const tooltip = d3.select("#tooltip");
-const label = tooltip
-  .append("div")
-  .attr("class", "tooltip-label")
-  .style("display", "none");
-const pieLayout = { left: 0, top: 0, width: 170, height: 170 };
-const pieMargins = { left: 0, right: 0, top: 0, bottom: 0 };
-
-const pieContainer = tooltip
-  .append("svg")
-  .attr("width", pieLayout.width + pieMargins.left + pieMargins.right + 20)
-  .attr("height", pieLayout.height + pieMargins.top + pieMargins.bottom + 20)
-  .style("display", "block");
-
-// Used for zooming in
-const yDomainMax = y.domain()[1];
-// Using https://d3-graph-gallery.com/graph/interactivity_zoom.html as a reference
-// This creates the zoom in effect for the stream graph
-const zoom = d3
-  .zoom()
-  .scaleExtent([1, 20])
-  .extent([
-    [0, 0],
-    [width, height],
-  ])
-  .translateExtent([
-    [-margin.left, -margin.top],
-    [width + margin.right, height],
-  ])
-  .on("zoom", (event) => {
-    const t = event.transform;
-    const k = t.k;
-    const newX = t.rescaleX(x);
-    const newYMax = yDomainMax / k;
-    const newY = d3.scaleLinear().domain([0, newYMax]).range([height, 0]);
-
-    // // update axes
-    xAxis.call(d3.axisBottom(newX).tickFormat(d3.format("d")));
-
-    yAxis.call(d3.axisLeft(newY));
-
-    // update area paths using new scales
-    const updatedArea = d3
-      .area()
-      .x((d) => newX(d.data.year))
-      .y0((d) => newY(d[0]))
-      .y1((d) => newY(d[1]))
-      .curve(d3.curveBasis);
-
-    svg.selectAll("path.stream-path").attr("d", updatedArea);
-  });
-
-// group for stacked-area layers (will be clipped)
-
-// You need to draw the paths first so that they are behind the axes
-layersG
-  .selectAll("path")
-  .data(series)
+const layers = streamGroup.selectAll(".layer")
+  .data(stackedData)
   .join("path")
-  .attr("class", "stream-path")
-  .attr("fill", (d) => genreColor(d.key))
+  .attr("class", "layer")
+  .attr("fill", d => genreColor(d.key))
   .attr("d", area)
-  .attr("opacity", 0.8)
-  .attr("stroke", "#fff")
-  .attr("stroke-width", 0.5)
-  .on("mouseover", function (event, d) {
-    d3.select(this)
-      .attr("opacity", 1)
-      .attr("stroke", "#000")
-      .attr("stroke-width", 1);
-    tooltip
-      .style("display", "block")
-      .style("border", "")
-      .style("outline", "")
-      .style("background", "");
+  .style("cursor", "pointer")
+  .on("mouseover", function() {
+      d3.selectAll(".layer").style("opacity", 0.3); 
+      d3.select(this).style("opacity", 1);          
+  })
+  .on("mouseout", function() {
+      d3.selectAll(".layer").style("opacity", 1);   
+  })
+  .on("click", function (event, d) {
+    const clickedGenre = d.key; 
+    console.log(`Stream clicked: ${clickedGenre}. Opening bar chart...`);
 
-    pieContainer.style("display", "none");
-    label.style("display", "block").text(`Genre: ${d.key}`);
-  })
-  .on("mousemove", function (event) {
-    tooltip
-      .style("left", event.pageX + 15 + "px")
-      .style("top", event.pageY - 15 + "px");
-  })
-  .on("mouseout", function () {
-    d3.select(this)
-      .attr("opacity", 0.8)
-      .attr("stroke", "#fff")
-      .attr("stroke-width", 0.5);
-    tooltip.style("display", "none");
-    label.style("display", "none");
+    d3.select("#chart-container")
+      .style("opacity", 0.05)
+      .style("pointer-events", "none"); 
+
+    renderBarChart(clickedGenre, "#bar-chart-inject");
+
+    d3.select("#bar-container")
+      .style("opacity", 1)
+      .style("pointer-events", "all");
   });
 
-// The x-axis with the ticks
-// this is where the years are being created
-const xAxis = svg
-  .append("g")
+// ==========================================
+// 4. AXES & DYNAMIC ZOOM LOGIC
+// ==========================================
+const xAxis = svg.append("g")
   .attr("class", "stream-x-axis")
-  .attr("transform", `translate(0,${height})`);
+  .attr("transform", `translate(0,${height - margin.bottom})`)
+  .call(d3.axisBottom(x).tickFormat(d3.format("d"))); 
 
-xAxis.call(d3.axisBottom(x).tickFormat(d3.format("d")));
+const yAxis = svg.append("g")
+  .attr("transform", `translate(${margin.left},0)`)
+  .call(d3.axisLeft(y));
 
-xAxis
-  .append("text")
-  .attr("x", width / 2)
-  .attr("y", 60)
+yAxis.append("text")
+  .attr("x", -height / 2)
+  .attr("y", -45)
   .attr("fill", "black")
-  .style("font-size", "25px")
-  .text("Year");
+  .attr("transform", "rotate(-90)")
+  .style("text-anchor", "middle")
+  .style("font-size", "18px")
+  .text("Movie Count");
 
-// Selecting the year titles
+const zoom = d3.zoom()
+  .scaleExtent([1, 10]) 
+  .translateExtent([[margin.left, 0], [width - margin.right, height]]) 
+  .extent([[margin.left, 0], [width - margin.right, height]])
+  .on("zoom", zoomed);
+
+svg.call(zoom);
+
+function zoomed(event) {
+  // 1. Rescale X Axis
+  const newX = event.transform.rescaleX(x);
+  xAxis.call(d3.axisBottom(newX).tickFormat(d3.format("d")));
+
+  // 2. Find visible boundaries
+  const [minVisible, maxVisible] = newX.domain();
+
+  // 3. Dynamically find the new maximum Y value in the visible area
+  let maxValVisible = 0;
+  stackedData.forEach(layer => {
+    layer.forEach(d => {
+      const year = d.data.year;
+      if (year >= minVisible && year <= maxVisible) {
+        if (d[1] > maxValVisible) {
+          maxValVisible = d[1];
+        }
+      }
+    });
+  });
+
+  if (maxValVisible === 0) maxValVisible = 1; // Fallback to avoid 0 domain
+
+  // 4. Rescale Y Axis based on new visible maximum
+  y.domain([0, maxValVisible]).nice();
+  yAxis.call(d3.axisLeft(y));
+
+  // 5. Redraw the areas utilizing BOTH updated axes
+  const newArea = d3.area()
+    .x(d => newX(d.data.year))
+    .y0(d => y(d[0]))
+    .y1(d => y(d[1]));
+
+  layers.attr("d", newArea);
+}
+
+// ==========================================
+// 5. TOOLTIP / PIE CHART / PCP INTERACTIONS
+// ==========================================
+const tooltip = d3.select("#tooltip");
+tooltip.selectAll("svg").remove();
+const pieContainer = tooltip.append("svg").attr("width", 220).attr("height", 220); 
+
+const pieLayout = { left: 0, top: 0, width: 180, height: 180 };
+const pieMargins = { top: 10, right: 10, bottom: 10, left: 10 };
+
+let currentYear = null;
+let yearCheck = 0;
+
 xAxis
   .on("mouseover", function (event) {
-    // Uses the data from the label of the nearest tick to show the pie chart
     const tick = event.target.closest(".tick");
     if (!tick) return;
-    // Extracting the year
+    
+    pieContainer.selectAll("g").remove(); 
+    
     const label = tick.querySelector("text").textContent;
-    const year = new Date(label).getFullYear();
+    const year = parseInt(label, 10);
     if (Number.isNaN(year)) return;
 
-    pieContainer.style("display", "block");
+    const chartBox = document.getElementById("chart-container").getBoundingClientRect();
+    const tooltipX = chartBox.right + window.scrollX + 20;
+
     tooltip
       .style("display", "block")
-      // new pie position to the right instead of bottom (bc of overlap)
-      .style("left", 0.75 * width + "px")
-      .style("top", 0.2 * height + "px");
+      .style("left", tooltipX + "px")
+      .style("top", (event.pageY - 100) + "px");
 
-    createPieChart(pieContainer, pieLayout, pieMargins, year + 1);
+    createPieChart(pieContainer, pieLayout, pieMargins, year);
   })
   .on("mousemove", function (event) {
-    // Make sure the pie chart moves with the cursor
     const tick = event.target.closest(".tick");
     if (!tick) return;
+
+    const chartBox = document.getElementById("chart-container").getBoundingClientRect();
+    const tooltipX = chartBox.right + window.scrollX + 20;
+
     tooltip
-      .style("left", 0.75 * width + "px")
-      .style("top", 0.2 * height + "px");
+      .style("left", tooltipX + "px")
+      .style("top", (event.pageY - 100) + "px");
   })
   .on("click", function (event) {
-
     const tick = event.target.closest(".tick");
-    if (!tick) return;
+    if(!tick) return;
+    
     const label = tick.querySelector("text").textContent;
-    const year = new Date(label).getFullYear();
+    // Changed from new Date().getFullYear() to parseInt() to avoid timezone shifting!
+    const year = parseInt(label, 10); 
     if (Number.isNaN(year)) return;
 
     if (year !== currentYear) {
       yearCheck = 0;
-      console.log('Year clicked: ${year}. Filtering PCP...');
+      console.log(`Year clicked: ${year}. Filtering PCP...`);
       updatePCPByYear(year);
     } else {
       yearCheck++;
@@ -263,46 +238,43 @@ xAxis
         console.log('Returning to Default Year: (All Years)');
         updatePCPByYear();
       } else {
-        console.log('Year clicked: ${year}. Filtering PCP...');
+        console.log(`Year clicked: ${year}. Filtering PCP...`);
         updatePCPByYear(year);
       }
     }
-
     currentYear = year;
-
   })
   .on("mouseout", function (event) {
-    // hide if mouse leaves the axis entirely
     const related = event.relatedTarget;
     if (related && related.closest && related.closest(".stream-x-axis")) return;
-    pieContainer.style("display", "none");
+    
+    pieContainer.selectAll("g").remove(); 
     tooltip.style("display", "none");
   });
 
-// Adding on the y axis
-const yAxis = svg.append("g");
-
-yAxis.call(d3.axisLeft(y));
-yAxis
-  .append("text")
-  .attr("x", -height / 2)
-  .attr("y", -80)
-  .attr("fill", "black")
-  .attr("transform", "rotate(-90)")
-  .style("text-anchor", "middle")
-  .style("font-size", "25px")
-  .text("Movie Count");
-
-// Legend
+// ==========================================
+// 6. LEGEND GENERATION
+// ==========================================
 const legendContainer = d3.select("#legend-items");
+legendContainer.selectAll("*").remove(); 
+
 genresList.forEach((genre) => {
-  const item = legendContainer.append("div").attr("class", "legend-item");
-  item
-    .append("div")
-    .attr("class", "legend-color")
-    .style("background-color", genreColor(genre));
-  item.append("span").text(genre);
+    const item = legendContainer.append("div").attr("class", "legend-item");
+    item.append("div")
+        .attr("class", "legend-color")
+        .style("background-color", genreColor(genre));
+    item.append("span").text(genre);
 });
 
-// Adding on the zoom functionality to the outer svg
-outer.call(zoom);
+// ==========================================
+// 7. BACK BUTTON LOGIC (BAR CHART -> STREAM)
+// ==========================================
+d3.select("#close-bar-btn").on("click", () => {
+    d3.select("#bar-container")
+      .style("opacity", 0)
+      .style("pointer-events", "none");
+    
+    d3.select("#chart-container")
+      .style("opacity", 1)
+      .style("pointer-events", "all");
+});

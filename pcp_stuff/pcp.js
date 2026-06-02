@@ -168,7 +168,7 @@ export function updatePCPByYear(year) {
     let genreTotals = {};
 
     // Update the title dynamically based on the year passed in
-    const titleText = year ? `Movie Attribute Comparisons by Genre (${year + 1})` : "Movie Attribute Comparisons by Genre (All Years)";
+    const titleText = year ? `Movie Attribute Comparisons by Genre (${year})` : "Movie Attribute Comparisons by Genre (All Years)";
     d3.select("#pcp-chart .chart-title").text(titleText);
 
     const filteredData = year ? rawData.filter(d => {

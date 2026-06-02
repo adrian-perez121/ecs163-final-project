@@ -1,40 +1,32 @@
-/* ── Reset & base ─────────────────────────────────────────────────────────── */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: 'Segoe UI', Arial, sans-serif;
-  background: #f4f7fa;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 32px 16px;
-}
-
-/* ── Card wrapper ─────────────────────────────────────────────────────────── */
-.card {
-  background: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  padding: 32px 28px 24px 28px;
-  width: 820px;
-  max-width: 100%;
-}
-
 /* ── SVG container ────────────────────────────────────────────────────────── */
-#chart {
+#chart, #bar-chart-inject {
   width: 100%;
 }
 
-#chart svg {
+/* Forces the injection div to respect the flex boundary */
+#bar-chart-inject {
+  flex: 1;
+  min-height: 0; 
+  display: flex;
+  flex-direction: column;
+}
+
+#bar-chart-inject svg {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%; /* Forces the SVG to shrink instead of overflowing */
+  min-height: 0;
   overflow: visible;
+}
+
+/* ── DOM Titles ── */
+.chart-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+    margin-left: 20px;
+    flex-shrink: 0; /* Keeps the title from getting squished by the graph */
 }
 
 /* ── Axes ─────────────────────────────────────────────────────────────────── */
@@ -47,11 +39,8 @@ body {
 
 .axis text {
   fill: #6b7280;
-  font-size: 12px;
+  font-size: 11px;
 }
-
-.axis--x .domain { display: none; }
-.axis--y .domain { display: none; }
 
 /* ── Grid lines ───────────────────────────────────────────────────────────── */
 .grid line {
@@ -81,51 +70,25 @@ body {
   filter: brightness(1.12);
 }
 
-/* Budget category colours — light → dark green */
-.bar--cat0 { fill: #10ff00; } /* $ 0 - 1k          */
-.bar--cat1 { fill: #00cf00; } /* $ 1.1k - 1 mil    */
-.bar--cat2 { fill: #009f00; } /* $ 1.1 mil - 100 mil */
-.bar--cat3 { fill: #006000; } /* $ 100 mil+         */
-
 /* ── Tooltip ──────────────────────────────────────────────────────────────── */
-.tooltip {
+.bar-tooltip {
   position: absolute;
   pointer-events: none;
   background: rgba(30, 30, 30, 0.88);
   color: #fff;
   font-size: 12px;
-  padding: 7px 11px;
-  border-radius: 6px;
-  white-space: nowrap;
+  padding: 7px 10px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   opacity: 0;
-  transition: opacity 0.12s ease;
-  z-index: 100;
+  transition: opacity 0.2s, transform 0.1s ease-out;
+  transform: translate(-50%, -100%);
+  z-index: 999;
 }
 
-.tooltip.visible {
-  opacity: 1;
-}
-
-.tooltip strong {
+.bar-tooltip strong {
   display: block;
   font-size: 13px;
-  margin-bottom: 2px;
-}
-
-/* ── Legend ───────────────────────────────────────────────────────────────── */
-.legend {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.legend-item rect {
-  rx: 3;
-  ry: 3;
-}
-
-.legend-item text {
-  fill: #374151;
-  font-size: 12px;
-  dominant-baseline: central;
+  margin-bottom: 4px;
+  color: #a7f3d0;
 }

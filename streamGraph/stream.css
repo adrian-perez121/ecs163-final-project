@@ -19,15 +19,61 @@ h2 {
 #charts-column {
     display: flex;
     flex-direction: column;
-    gap: 0px;
+    gap: 20px; /* Gives a clean, small gap between the two charts */
     flex: 1;
     min-width: 550px;
     max-width: 900px;
 }
 
-#chart-container {
+/* --- NEW WRAPPER AND BAR STYLES --- */
+#chart-wrapper {
+    position: relative;
     width: 100%;
 }
+
+#chart-container {
+    width: 100%;
+    transition: opacity 0.5s ease-in-out;
+}
+
+#bar-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease-in-out;
+    background-color: rgba(255, 255, 255, 0.95);
+    z-index: 10;
+    padding-top: 10px;
+    
+    /* Flexbox constraints to prevent overflow */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+#close-bar-btn {
+    padding: 8px 16px;
+    margin-left: 60px;
+    margin-bottom: 5px; 
+    cursor: pointer;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-weight: bold;
+    
+    /* Prevents the button from stretching */
+    align-self: flex-start;
+    flex-shrink: 0;
+}
+
+#close-bar-btn:hover {
+    background-color: #e0e0e0;
+}
+/* ----------------------------------- */
 
 #pcp-container {
     width: 100%;
@@ -84,18 +130,5 @@ h2 {
     pointer-events: none;
     display: none;
     font-size: 12px;
-}
-
-#pcp-tooltip.tooltip {
-    position: absolute;
-    background: white;
-    border: 1px solid #aaa;
-    padding: 5px;
-    pointer-events: none;
-    display: none;
-    font-size: 12px;
-}
-
-.tick text {
-    font-size: 14px;
+    z-index: 9999;
 }
