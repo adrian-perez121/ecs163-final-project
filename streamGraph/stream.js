@@ -280,3 +280,13 @@ d3.select("#close-bar-btn").on("click", () => {
       .style("opacity", 1)
       .style("pointer-events", "all");
 });
+
+d3.select("#close-scatter-btn").on("click", () => {
+  d3.select("#scatter-container")
+    .style("opacity", 0)
+    .style("pointer-events", "none");
+
+  d3.select("#bar-container")
+    .style("opacity", 1)
+    .style("pointer-events", "all");
+});

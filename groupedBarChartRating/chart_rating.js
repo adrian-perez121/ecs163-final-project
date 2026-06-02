@@ -1,4 +1,5 @@
 import { genreColor } from "../utils.js"; 
+import { renderScatterPlot } from "../scatterplot/scatter.js";
 
 export async function renderBarChart(genre, containerId) {
     // 1. Clear previous chart
@@ -148,14 +149,28 @@ export async function renderBarChart(genre, containerId) {
                 tooltip.style("opacity", 0);
             })
             .on("click", function (event, d) {
-                const budgetMap = {
-                    "$ 0 - 1k": "0-1000", "$ 1.1k - 1 mil": "1000-1000000",
-                    "$ 1.1 mil - 100 mil": "1000000-100000000", "$ 100 mil+": "100000000-999999999999"
-                };
-                const params = new URLSearchParams({
-                    genre: genre, budgetRange: budgetMap[d.cat], yearRange: eraLabels[d.era] || d.era
-                });
-                window.location.href = `../scatterplot/scatter.html?${params}`;
+              const budgetMap = {
+                "$ 0 - 1k":            "0-1000",
+                "$ 1.1k - 1 mil":      "1000-1000000",
+                "$ 1.1 mil - 100 mil": "1000000-100000000",
+                "$ 100 mil+":          "100000000-999999999999"
+              };
+            
+              d3.select("#bar-container")
+                .style("opacity", 0)
+                .style("pointer-events", "none");
+            
+              d3.select("#scatter-container")
+                .style("opacity", 1)
+                .style("pointer-events", "all");
+            
+              renderScatterPlot({
+                genre:       genre,
+                budgetRange: budgetMap[d.cat],
+                yearRange:   eraLabels[d.era] || d.era,
+                color:       baseColor,
+                dotOpacity:  0.4 + (d.catIndex * 0.2)
+              }, "#scatter-chart-inject");
             });
     });
 
