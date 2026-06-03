@@ -18,10 +18,11 @@ h2 {
 #charts-column {
     display: flex;
     flex-direction: column;
-    gap: 20px; /* Gives a clean, small gap between the two charts */
+    gap: 20px;
+    /* Gives a clean, small gap between the two charts */
     flex: 1;
     min-width: 550px;
-    max-width: 900px;
+    max-width: 1200px;
 }
 
 /* --- NEW WRAPPER AND BAR STYLES --- */
@@ -47,7 +48,7 @@ h2 {
     background-color: rgba(255, 255, 255, 0.95);
     z-index: 10;
     padding-top: 10px;
-    
+
     /* Flexbox constraints to prevent overflow */
     box-sizing: border-box;
     display: flex;
@@ -57,13 +58,13 @@ h2 {
 #close-bar-btn {
     padding: 8px 16px;
     margin-left: 60px;
-    margin-bottom: 5px; 
+    margin-bottom: 5px;
     cursor: pointer;
     background-color: #f0f0f0;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-weight: bold;
-    
+
     /* Prevents the button from stretching */
     align-self: flex-start;
     flex-shrink: 0;
@@ -72,11 +73,13 @@ h2 {
 #close-bar-btn:hover {
     background-color: #e0e0e0;
 }
+
 /* ----------------------------------- */
 
 #pcp-container {
     width: 100%;
-    max-width: 950px;
+    max-width: 100%;
+    height: 370px;
     margin: 0 auto;
 }
 
