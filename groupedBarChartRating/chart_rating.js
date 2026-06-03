@@ -58,7 +58,7 @@ export async function renderBarChart(genre, containerId) {
         .style("opacity", 0);
 
     // 5. Load and Process Data
-    const rawData = await d3.csv("../output.csv");
+    const rawData = await d3.csv("./output.csv");
     
     // Filter by passed genre
     let genreData = rawData.filter(d => {

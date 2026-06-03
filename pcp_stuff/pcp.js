@@ -161,7 +161,7 @@ function updatePCP(data) {
 }
 
 // rawData form outputCSV
-const rawData = await d3.csv("../output.csv");
+const rawData = await d3.csv("./output.csv");
 
 // new function we are using in stream.js
 export function updatePCPByYear(year) {

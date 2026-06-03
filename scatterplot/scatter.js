@@ -2,7 +2,7 @@ import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 // Config 
 const MARGIN = { top: 30, right: 30, bottom: 70, left: 90 };
-const DATA_PATH = "../output.csv";
+const DATA_PATH = "./output.csv";
 
 const GENRE_COLORS = d3.schemeTableau10;
 

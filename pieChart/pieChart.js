@@ -1,5 +1,5 @@
 import { genreColor } from "../utils.js"
-const dataPath = "../output.csv";
+const dataPath = "./output.csv";
 const data = await d3.csv(dataPath);
 const YearColumnName = "release_date";
 const width = window.innerWidth;
@@ -7,7 +7,7 @@ const height = window.innerHeight;
 
 // Fetching our processed data that was already processed
 // this way we don't have to get the data on every page load
-const dataObject = await fetch("../data_processing/pie_data.json").then(
+const dataObject = await fetch("./data_processing/pie_data.json").then(
   (r) => {
     if (!r.ok) {
       throw new Error(r.status);
