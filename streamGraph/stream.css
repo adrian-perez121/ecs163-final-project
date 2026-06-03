@@ -102,6 +102,7 @@ h2 {
 #legend-container {
     width: 180px;
     margin-right: 50px;
+    margin-left: 50px;
     max-height: 600px;
     overflow-y: auto;
     border: 1px solid #ccc;
