@@ -75,13 +75,13 @@ export async function renderBarChart(genre, containerId) {
     });
 
     genreData.forEach(d => {
-        const year = +d.release_date;
+        const year = d.release_date ? +d.release_date.slice(0, 4) : null;
         const budget = +d.budget;
         const rating = +d.imdb_rating;
         const era = getEraStartYear(year);
         const cat = getBudgetCategory(budget);
 
-        if (era !== null && cat !== null && !isNaN(rating)) {
+        if (era !== null && cat !== null && !isNaN(rating) && rating > 0 && budget > 0) {
             binnedData[era][cat].sum += rating;
             binnedData[era][cat].count += 1;
         }
@@ -182,7 +182,6 @@ export async function renderBarChart(genre, containerId) {
         const item = legendG.append("g").attr("transform", `translate(0, ${i * 24})`);
         item.append("rect").attr("width", 14).attr("height", 14)
             .attr("rx", 2)
-            // NEW: Apply the same base color and opacity to the legend blocks
             .attr("fill", baseColor)
             .attr("opacity", 0.4 + (i * 0.2)); 
         item.append("text").attr("x", 24).attr("y", 11)
