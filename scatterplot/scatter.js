@@ -25,6 +25,14 @@ function formatMoney(v) {
   return `$${v}`;
 }
 
+function getBudgetCategory(budget) {
+  if (budget >= 0 && budget <= 1000)           return "0-1000";
+  if (budget > 1000 && budget <= 1000000)      return "1000-1000000";
+  if (budget > 1000000 && budget <= 100000000) return "1000000-100000000";
+  if (budget > 100000000)                      return "100000000-999999999999";
+  return null;
+}
+
 export async function renderScatterPlot(filters, containerId) {
   const { genre, budgetRange, yearRange, color, dotOpacity } = filters;
 
@@ -45,7 +53,7 @@ export async function renderScatterPlot(filters, containerId) {
   })).filter(d =>
     d.budget > 0 &&
     d.imdb_rating > 0 &&
-    d.budget >= bLo && d.budget <= bHi &&
+    getBudgetCategory(d.budget) === budgetRange &&
     (d.release_date ? +d.release_date >= yLo && +d.release_date <= yHi : true) &&
     (genre ? getGenres(d).includes(genre) : true)
   );
@@ -78,7 +86,7 @@ export async function renderScatterPlot(filters, containerId) {
     "0-1000":                 [0,          1_000],
     "1000-1000000":           [1_000,      1_000_000],
     "1000000-100000000":      [1_000_000,  100_000_000],
-    "100000000-999999999999": [100_000_000, 1_000_000_000]
+    "100000000-999999999999": [100_000_000, 500_000_000]
   };
   
   const [xMin, xMax] = domainMap[budgetRange] || [0, 1_000_000_000];

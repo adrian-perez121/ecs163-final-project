@@ -99,7 +99,7 @@ const layers = streamGroup.selectAll(".layer")
     console.log(`Stream clicked: ${clickedGenre}. Opening bar chart...`);
 
     d3.select("#chart-container")
-      .style("opacity", 0.05)
+      .style("opacity", 0)
       .style("pointer-events", "none"); 
 
     renderBarChart(clickedGenre, "#bar-chart-inject");
