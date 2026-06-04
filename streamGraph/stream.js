@@ -6,7 +6,7 @@ import { renderBarChart } from "../groupedBarChartRating/chart_rating.js"
 // ==========================================
 // 1. DATA FETCHING & PROCESSING
 // ==========================================
-const dataObject = await fetch("../data_processing/stream_data.json").then(
+const dataObject = await fetch(new URL("../data_processing/stream_data.json", import.meta.url)).then(
   (r) => {
     if (!r.ok) throw new Error(r.status);
     return r.json();
