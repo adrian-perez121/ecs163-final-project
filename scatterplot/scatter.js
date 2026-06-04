@@ -54,7 +54,7 @@ export async function renderScatterPlot(filters, containerId) {
     d.budget > 0 &&
     d.imdb_rating > 0 &&
     getBudgetCategory(d.budget) === budgetRange &&
-    (d.release_date ? +d.release_date >= yLo && +d.release_date <= yHi : true) &&
+    (d.release_date ? +d.release_date >= yLo && +d.release_date <= yHi : false) &&
     (genre ? getGenres(d).includes(genre) : true)
   );
 
