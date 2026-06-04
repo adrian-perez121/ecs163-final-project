@@ -161,7 +161,7 @@ function updatePCP(data) {
         .text(dim => dim.toUpperCase().replace("_", " "));
 }
 
-// rawData form outputCSV
+// rawData from CSV with budgets and rating
 const rawData = await d3.csv(new URL("../data/with_budgets_and_ratings.csv", import.meta.url));
 
 // new function we are using in stream.js
@@ -170,11 +170,8 @@ export function updatePCPByYear(year) {
     let genreTotals = {};
 
     // Update the title dynamically based on the year passed in
-    const titleText = year ? `Movie Attribute Comparisons by Genre (${year})` : "Movie Attribute Comparisons by Genre (All Years)";
-    d3.select("#pcp-chart .chart-title").text(titleText);
 
     const filteredData = year ? rawData.filter(d => {
-        if (!d.release_date) return false;
         const rowYear = parseInt(d.release_date.slice(0, 4), 10);
         return rowYear === (year + 1);
     }) : rawData;
@@ -235,6 +232,17 @@ export function updatePCPByYear(year) {
     });
 
     console.log("Processed PCP Data Array:", finalPCPData);
+
+    let titleText = "";
+    if (year && finalPCPData.length === 0) {
+        titleText = `Movie Attribute Comparisons by Genre (${year}) (No Data)`;
+    } else if (year && finalPCPData.length > 0) {
+        titleText = `Movie Attribute Comparisons by Genre (${year})`;
+    } else {
+        titleText = "Movie Attribute Comparisons by Genre (All Years)";
+    }
+    d3.select("#pcp-chart .chart-title").text(titleText);
+
     finalPCPData.sort((a, b) => a.genre.localeCompare(b.genre));
 
     // update
