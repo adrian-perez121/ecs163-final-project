@@ -40,7 +40,7 @@ export async function renderScatterPlot(filters, containerId) {
   const [yLo, yHi] = parseYearRange(yearRange);
 
   // Load + filter data
-  const rawData = await d3.csv("../output.csv");
+  const rawData = await d3.csv("data/with_budgets_and_ratings.csv");
   const data = rawData.map(row => ({
     id: row.id,
     title: row.title,

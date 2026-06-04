@@ -1,4 +1,4 @@
-import { genreColor } from "../utils.js";
+import { genreColor } from "/utils.js";
 //margins
 const margin = { top: 60, right: 80, bottom: 45, left: 80 };
 const width = 1200 - margin.left - margin.right;
@@ -162,7 +162,7 @@ function updatePCP(data) {
 }
 
 // rawData form outputCSV
-const rawData = await d3.csv("./output.csv");
+const rawData = await d3.csv("data/with_budgets_and_ratings.csv");
 
 // new function we are using in stream.js
 export function updatePCPByYear(year) {

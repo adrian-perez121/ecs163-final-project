@@ -1,13 +1,11 @@
-import { genreColor } from "../utils.js"
-const dataPath = "./output.csv";
-const data = await d3.csv(dataPath);
+import { genreColor } from "/utils.js"
 const YearColumnName = "release_date";
 const width = window.innerWidth;
 const height = window.innerHeight;
 
 // Fetching our processed data that was already processed
 // this way we don't have to get the data on every page load
-const dataObject = await fetch("./data_processing/pie_data.json").then(
+const dataObject = await fetch("/data_processing/pie_data.json").then(
   (r) => {
     if (!r.ok) {
       throw new Error(r.status);
@@ -33,13 +31,9 @@ const dataObject = await fetch("./data_processing/pie_data.json").then(
  * @param {Number} year - The year that pie chart will filter the data from
  */
 function createPieChart(container, layout, margin, year) {
-  const filteredData = data.filter((d) => d[YearColumnName] == year);
-  const processedData = {};
 
   // Preparing the data for the pie chart
   const pieData = Object.fromEntries(dataObject[year])
-
-  console.log(pieData)
 
   const radius = Math.min(layout.width / 2, layout.height / 2);
   const sortedKeys = Object.keys(pieData).sort((a, b) => d3.ascending(a, b));
