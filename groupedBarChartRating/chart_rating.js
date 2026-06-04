@@ -1,5 +1,5 @@
-import { genreColor } from "/utils.js"; 
-import { renderScatterPlot } from "/scatterplot/scatter.js";
+import { genreColor } from "../utils.js"; 
+import { renderScatterPlot } from "../scatterplot/scatter.js";
 
 export async function renderBarChart(genre, containerId) {
     // 1. Clear previous chart
@@ -59,7 +59,7 @@ export async function renderBarChart(genre, containerId) {
         .style("opacity", 0);
 
     // 5. Load and Process Data
-    const rawData = await d3.csv("data/with_budgets_and_ratings.csv");
+    const rawData = await d3.csv("../data/with_budgets_and_ratings.csv");
     
     // Filter by passed genre
     let genreData = rawData.filter(d => {

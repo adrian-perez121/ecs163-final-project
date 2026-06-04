@@ -1,11 +1,11 @@
-import { genreColor } from "/utils.js"
+import { genreColor } from "../utils.js"
 const YearColumnName = "release_date";
 const width = window.innerWidth;
 const height = window.innerHeight;
 
 // Fetching our processed data that was already processed
 // this way we don't have to get the data on every page load
-const dataObject = await fetch("/data_processing/pie_data.json").then(
+const dataObject = await fetch("../data_processing/pie_data.json").then(
   (r) => {
     if (!r.ok) {
       throw new Error(r.status);
