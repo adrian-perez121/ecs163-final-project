@@ -281,6 +281,11 @@ xAxis
 // 6. LEGEND GENERATION
 // ==========================================
 const legendContainer = d3.select("#legend-items");
+legendContainer.style("display", "flex")
+legendContainer.style("flex-direction", "column")
+legendContainer.style("height", "90%")
+legendContainer.style("justify-content", "space-between")
+
 legendContainer.selectAll("*").remove();
 
 [...genresList].reverse().forEach((genre) => {
