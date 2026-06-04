@@ -1,6 +1,6 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
-const data = await d3.csv("./data/with_budgets_and_ratings.csv");
+const data = await d3.csv(new URL("./data/with_budgets_and_ratings.csv", import.meta.url));
 function getColorFunc() {
     
     // processes data

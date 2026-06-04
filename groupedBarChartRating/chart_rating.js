@@ -59,7 +59,7 @@ export async function renderBarChart(genre, containerId) {
         .style("opacity", 0);
 
     // 5. Load and Process Data
-    const rawData = await d3.csv("../data/with_budgets_and_ratings.csv");
+    const rawData = await d3.csv(new URL("../data/with_budgets_and_ratings.csv", import.meta.url));
     
     // Filter by passed genre
     let genreData = rawData.filter(d => {
