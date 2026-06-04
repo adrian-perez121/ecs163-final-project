@@ -1,15 +1,17 @@
 import { genreColor } from "../utils.js";
 //margins
-const margin = { top: 60, right: 40, bottom: 60, left: 80 };
-const width = screen.width - margin.left - margin.right - 350;
-const height = 350 - margin.top - margin.bottom;
+const margin = { top: 60, right: 80, bottom: 45, left: 80 };
+const width = 1200 - margin.left - margin.right;
+const height = 340 - margin.top - margin.bottom;
 
 const dimensions = ["budget", "revenue", "rating", "popularity"];
 
 //initial append
 const svg = d3.select("#pcp-chart")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom);
+    .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+    .attr("preserveAspectRatio", "none")
+    .style("width", "100%")
+    .style("height", "auto");
 
 // The main container group translated away from the SVG edge
 const mainGroup = svg.append("g")
@@ -155,7 +157,6 @@ function updatePCP(data) {
         .style("font-weight", "bold")
         .style("fill", "#000000")
         .attr("y", height + 35)
-        .attr("dx", -30)
         .merge(labels)
         .text(dim => dim.toUpperCase().replace("_", " "));
 }
