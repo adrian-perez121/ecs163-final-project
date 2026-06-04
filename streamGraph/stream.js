@@ -154,7 +154,7 @@ yAxis.append("text")
   .text("Movie Count");
 
 const zoom = d3.zoom()
-  .scaleExtent([1, 10])
+  .scaleExtent([1, 12])
   .translateExtent([[margin.left, 0], [width - margin.right, height]])
   .extent([[margin.left, 0], [width - margin.right, height]])
   .on("zoom", zoomed);
