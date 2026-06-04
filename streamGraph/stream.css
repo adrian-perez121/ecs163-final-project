@@ -169,3 +169,34 @@ h2 {
 #close-scatter-btn:hover {
     background-color: #e0e0e0;
 }
+/* --- X-Axis Interactive Styles for stream graph */
+.stream-x-axis .tick {
+    cursor: pointer;
+}
+
+.stream-x-axis .tick text {
+    transition: all 0.15s ease-in-out;
+}
+
+.stream-x-axis .tick:hover text {
+    font-weight: 900 !important;
+    font-size: 15px !important;
+    fill: #0056b3 !important;
+}
+
+.stream-x-axis .tick:hover line {
+    stroke: #0056b3 !important;
+    stroke-width: 2px;
+}
+
+/* Stream Layer Specific Tooltip --- */
+.layer-tooltip {
+    background-color: rgba(30, 30, 30, 0.95) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}

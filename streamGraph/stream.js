@@ -80,6 +80,13 @@ const area = d3.area()
 const streamGroup = svg.append("g")
   .attr("clip-path", "url(#stream-clip)");
 
+// added tooltip div specifically for hovering over layers
+const layerTooltip = d3.select("body").append("div")
+  .attr("class", "layer-tooltip")
+  .style("display", "none")
+  .style("position", "absolute")
+  .style("z-index", "9999");
+
 const layers = streamGroup.selectAll(".layer")
   .data(stackedData)
   .join("path")
@@ -87,19 +94,32 @@ const layers = streamGroup.selectAll(".layer")
   .attr("fill", d => genreColor(d.key))
   .attr("d", area)
   .style("cursor", "pointer")
-  .on("mouseover", function () {
-    d3.selectAll(".layer").style("opacity", 0.3);
-    d3.select(this).style("opacity", 1);
+  // HOVER EFFECTS: Reveal the genre tooltip
+  .on("mouseover", function(event, d) {
+      d3.selectAll(".layer").style("opacity", 0.3); // Dim all other layers
+      d3.select(this).style("opacity", 1);          // Highlight the one being hovered
+      
+      // Adds the genre name into the tooltip and display it
+      layerTooltip.style("display", "block")
+                  .text(d.key);
   })
-  .on("mouseout", function () {
-    d3.selectAll(".layer").style("opacity", 1);
+  .on("mousemove", function(event) {
+      // Makes the tooltip follow the mouse cursor
+      layerTooltip.style("left", (event.pageX + 15) + "px")
+                  .style("top", (event.pageY - 25) + "px");
+  })
+  .on("mouseout", function() {
+      d3.selectAll(".layer").style("opacity", 1);   // Restore normal opacity
+      
+      // Hide the tooltip when the mouse leaves the layer
+      layerTooltip.style("display", "none");
   })
   .on("click", function (event, d) {
-    const clickedGenre = d.key;
+    const clickedGenre = d.key; 
     console.log(`Stream clicked: ${clickedGenre}. Opening bar chart...`);
 
     d3.select("#chart-container")
-      .style("opacity", 0)
+      .style("opacity", 0.05)
       .style("pointer-events", "none"); 
 
     renderBarChart(clickedGenre, "#bar-chart-inject");
@@ -107,6 +127,9 @@ const layers = streamGroup.selectAll(".layer")
     d3.select("#bar-container")
       .style("opacity", 1)
       .style("pointer-events", "all");
+      
+    // Hide the tooltip when the bar chart opens
+    layerTooltip.style("display", "none");
   });
 
 // ==========================================
@@ -260,7 +283,7 @@ xAxis
 const legendContainer = d3.select("#legend-items");
 legendContainer.selectAll("*").remove();
 
-genresList.forEach((genre) => {
+[...genresList].reverse().forEach((genre) => {
   const item = legendContainer.append("div").attr("class", "legend-item");
   item.append("div")
     .attr("class", "legend-color")
