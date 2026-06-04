@@ -5,7 +5,7 @@ const height = window.innerHeight;
 
 // Fetching our processed data that was already processed
 // this way we don't have to get the data on every page load
-const dataObject = await fetch(new URL("../data_processing/pie_data.json", import.meta.url)).then(
+const dataObject = await fetch(new URL("../data/pie_data.json", import.meta.url)).then(
   (r) => {
     if (!r.ok) {
       throw new Error(r.status);

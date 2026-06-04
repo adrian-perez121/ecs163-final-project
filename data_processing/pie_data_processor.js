@@ -6,9 +6,9 @@ import fs from "node:fs";
 import * as d3 from "d3";
 import { parse } from "csv-parse";
 
-const dataPath = "../all_movies_after_1920.csv";
+const dataPath = "../data/all_movies.csv";
 
-console.log("start processing the data");
+console.log("Start processing the data for pie chart");
 
 const parseGenres = (genres) => {
   return genres
@@ -53,7 +53,7 @@ for (const [year, counts] of yearsMap) {
   }
 }
 
-fs.writeFile("pie_data.json", JSON.stringify(dataObject), "utf-8", (err) => {
+fs.writeFile("../data/pie_data.json", JSON.stringify(dataObject), "utf-8", (err) => {
   if (err) {
     console.log("Something went wrong", err.message);
     return;

@@ -6,9 +6,9 @@ import fs from "node:fs";
 import * as d3 from "d3";
 import { parse } from "csv-parse";
 
-const dataPath = "../all_movies_after_1920.csv";
+const dataPath = "../data/all_movies.csv";
 
-console.log("started processing the data");
+console.log("Started processing the data for stream graph");
 
 // processes data
 const yearGenreCounts = new Map();
@@ -18,7 +18,7 @@ const input = fs.createReadStream(new URL(dataPath, import.meta.url));
 const parser = input.pipe(parse({ columns: true, trim: true }));
 
 for await (const d of parser) {
-  const year = parseFloat(d.release_date);
+  let year = parseFloat(d.release_date);
   year = Math.floor(year);
 
   const genres = (d.genres)
@@ -48,7 +48,7 @@ stream_data_object["yearGenreCounts"] = JSON.stringify(yearGenreCountsObject);
 stream_data_object["genresList"] = JSON.stringify(genresList);
 
 fs.writeFile(
-  "stream_data.json",
+  "../data/stream_data.json",
   JSON.stringify(stream_data_object),
   "utf8",
   (err) => {
