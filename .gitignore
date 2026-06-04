@@ -8,4 +8,6 @@
 
 /node_modules
 
-all_movies_after_1920.csv
+all_movies.csv
+TMDB_all_movies.csv
+*.zip
