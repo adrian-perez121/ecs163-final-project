@@ -1,6 +1,6 @@
 import { genreColor } from "../utils.js";
 import createPieChart from "../pieChart/pieChart.js";
-import { updatePCPByYear } from "../pcp_stuff/pcp.js";
+import { updatePCPByYear } from "../pcp/pcp.js";
 import { renderBarChart } from "../groupedBarChartRating/chart_rating.js"
 
 // ==========================================

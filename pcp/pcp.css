@@ -1,0 +1,44 @@
+/* style.css */
+
+/* Background font and background */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #ffffffe7;
+    margin: 0;
+}
+
+/* PCP lines style */
+.genre-path {
+    fill: none;
+    stroke-width: 3px;
+    opacity: 0.75;
+    transition: opacity 0.2s, stroke-width 0.2s;
+    /* Makes the hover effect silky smooth */
+}
+
+/* Highlight effect for lines */
+.genre-path:hover {
+    stroke-width: 6px;
+    opacity: 1.0;
+    cursor: pointer;
+}
+
+/* black tick marks */
+.axis-container path,
+.axis-container line {
+    stroke: #000000;
+    stroke-width: 1.5px;
+}
+
+/* black tick numbers on the vertical axes */
+.axis-container text {
+    font-size: 11px;
+    fill: #000000;
+}
+
+/* Black tick text for the main dimension labels at the top  */
+.axis-label {
+    font-size: 13px;
+    font-weight: bold;
+    fill: #000000;
+}
