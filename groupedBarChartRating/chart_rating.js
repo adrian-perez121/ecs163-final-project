@@ -43,8 +43,8 @@ export async function renderBarChart(genre, containerId) {
 
     // 3. Setup Dimensions
     const margin = { top: 40, right: 140, bottom: 60, left: 60 };
-    const width = 800 - margin.left - margin.right;
-    const height = 400 - margin.top - margin.bottom;
+    const width = 1200 - margin.left - margin.right;
+    const height = 420 - margin.top - margin.bottom;
 
     // 4. Create SVG & Tooltip inside the passed containerId
     const svg = container.append("svg")
