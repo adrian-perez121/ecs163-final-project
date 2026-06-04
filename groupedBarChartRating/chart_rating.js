@@ -1,4 +1,5 @@
 import { genreColor } from "../utils.js"; 
+import { renderScatterPlot } from "../scatterplot/scatter.js";
 
 export async function renderBarChart(genre, containerId) {
     // 1. Clear previous chart
@@ -74,13 +75,13 @@ export async function renderBarChart(genre, containerId) {
     });
 
     genreData.forEach(d => {
-        const year = +d.release_date;
+        const year = d.release_date ? +d.release_date.slice(0, 4) : null;
         const budget = +d.budget;
         const rating = +d.imdb_rating;
         const era = getEraStartYear(year);
         const cat = getBudgetCategory(budget);
 
-        if (era !== null && cat !== null && !isNaN(rating)) {
+        if (era !== null && cat !== null && !isNaN(rating) && rating > 0 && budget > 0) {
             binnedData[era][cat].sum += rating;
             binnedData[era][cat].count += 1;
         }
@@ -148,14 +149,28 @@ export async function renderBarChart(genre, containerId) {
                 tooltip.style("opacity", 0);
             })
             .on("click", function (event, d) {
-                const budgetMap = {
-                    "$ 0 - 1k": "0-1000", "$ 1.1k - 1 mil": "1000-1000000",
-                    "$ 1.1 mil - 100 mil": "1000000-100000000", "$ 100 mil+": "100000000-999999999999"
-                };
-                const params = new URLSearchParams({
-                    genre: genre, budgetRange: budgetMap[d.cat], yearRange: eraLabels[d.era] || d.era
-                });
-                window.location.href = `../scatterplot/scatter.html?${params}`;
+              const budgetMap = {
+                "$ 0 - 1k":            "0-1000",
+                "$ 1.1k - 1 mil":      "1000-1000000",
+                "$ 1.1 mil - 100 mil": "1000000-100000000",
+                "$ 100 mil+":          "100000000-999999999999"
+              };
+            
+              d3.select("#bar-container")
+                .style("opacity", 0)
+                .style("pointer-events", "none");
+            
+              d3.select("#scatter-container")
+                .style("opacity", 1)
+                .style("pointer-events", "all");
+            
+              renderScatterPlot({
+                genre:       genre,
+                budgetRange: budgetMap[d.cat],
+                yearRange:   eraLabels[d.era] || d.era,
+                color:       baseColor,
+                dotOpacity:  0.4 + (d.catIndex * 0.2)
+              }, "#scatter-chart-inject");
             });
     });
 
@@ -167,7 +182,6 @@ export async function renderBarChart(genre, containerId) {
         const item = legendG.append("g").attr("transform", `translate(0, ${i * 24})`);
         item.append("rect").attr("width", 14).attr("height", 14)
             .attr("rx", 2)
-            // NEW: Apply the same base color and opacity to the legend blocks
             .attr("fill", baseColor)
             .attr("opacity", 0.4 + (i * 0.2)); 
         item.append("text").attr("x", 24).attr("y", 11)
