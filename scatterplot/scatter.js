@@ -63,9 +63,9 @@ export async function renderScatterPlot(filters, containerId) {
   container.selectAll("*").remove();
 
   // Match bar chart dimensions exactly
-  const margin = { top: 40, right: 140, bottom: 60, left: 60 };
-  const totalW = 800;
-  const totalH = 310;
+  const margin = { top: 40, right: 50, bottom: 60, left: 150 };
+  const totalW = 1200;
+  const totalH = 450;
   const width  = totalW - margin.left - margin.right;
   const height = totalH - margin.top  - margin.bottom;
 
