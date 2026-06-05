@@ -14,7 +14,7 @@ The `data` directory contains the filter scripts (written in python) to filter t
 
 The `data_processing` directory there are two python scripts and two JS scripts. First we will talk about the python scripts since these do the preliminary data processing.
 
-The `all_movies_processor.py` file was used to reformat the release date column to only be the year. The processed data is still large so you will not see it in the GitHub Repository. TAYLOR TALK ABOUT YOUR DATA FILTER HERE. The final result is data that has been filtered to only include revenue and review.
+The `all_movies_processor.py` file was used to reformat the release date column to only be the year. The processed data is still large so you will not see it in the GitHub Repository. The `with_budgets_and_ratings.py` filters movies out that have a revenue or budget value of 0, so only movies with an official monetary statistic will be included. The data is then converted to an official year format and sorted by its date. The final result is data that has been filtered to only include revenue and review.
 
 The JS files are used to process the dataset that was created by `all_movies_processor.py`. The processed data is stored in two JSON files, each for their respective visualizations. This way the stream graph and pie chart can immediately start loading the visualization without having to worry about processing times.
 
