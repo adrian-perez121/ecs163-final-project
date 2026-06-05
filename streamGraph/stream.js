@@ -39,7 +39,7 @@ for (let y = minYear; y <= maxYear; y++) {
 // ==========================================
 const width = 1200;
 const height = 460;
-const margin = { top: 20, right: 0, bottom: 50, left: 60 };
+const margin = { top: 20, right: 0, bottom: 60, left: 70 };
 
 d3.select("#chart-container").selectAll("*").remove();
 
@@ -144,13 +144,20 @@ const yAxis = svg.append("g")
   .attr("transform", `translate(${margin.left},0)`)
   .call(d3.axisLeft(y));
 
+xAxis.append("text")
+  .attr("x",width / 2)
+  .attr("y", 60)
+  .attr("fill", "black")
+  .style("font-size", "25px")
+  .text("Year");
+
 yAxis.append("text")
   .attr("x", -height / 2)
   .attr("y", -45)
   .attr("fill", "black")
   .attr("transform", "rotate(-90)")
   .style("text-anchor", "middle")
-  .style("font-size", "18px")
+  .style("font-size", "25px")
   .text("Movie Count");
 
 const zoom = d3.zoom()
