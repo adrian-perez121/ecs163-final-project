@@ -173,7 +173,7 @@ export function updatePCPByYear(year) {
 
     const filteredData = year ? rawData.filter(d => {
         const rowYear = parseInt(d.release_date.slice(0, 4), 10);
-        return rowYear === (year + 1);
+        return rowYear === year;
     }) : rawData;
 
     filteredData.forEach(d => {
