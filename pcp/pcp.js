@@ -235,7 +235,7 @@ export function updatePCPByYear(year) {
 
     let titleText = "";
     if (year && finalPCPData.length === 0) {
-        titleText = `Movie Attribute Comparisons by Genre (${year}) (No Data)`;
+        titleText = `Movie Attribute Comparisons by Genre (${year}) (Data Missing)`;
     } else if (year && finalPCPData.length > 0) {
         titleText = `Movie Attribute Comparisons by Genre (${year})`;
     } else {

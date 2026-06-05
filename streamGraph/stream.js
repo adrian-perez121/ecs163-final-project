@@ -220,12 +220,13 @@ xAxis
     if (Number.isNaN(year)) return;
 
     const chartBox = document.getElementById("chart-container").getBoundingClientRect();
-    const tooltipX = chartBox.right + window.scrollX + 20;
+    const tooltipX = (event.pageX - (pieLayout.width + pieMargins.right + pieMargins.left) / 2)
+    const tooltipY = (event.pageY - pieLayout.height - 80)
 
     tooltip
       .style("display", "block")
       .style("left", tooltipX + "px")
-      .style("top", (event.pageY - 100) + "px")
+      .style("top", tooltipY + "px")
       .style("outline", "none")
       .style("border", "none")
       .style("stroke", "none")
@@ -239,11 +240,12 @@ xAxis
     if (!tick) return;
 
     const chartBox = document.getElementById("chart-container").getBoundingClientRect();
-    const tooltipX = chartBox.right + window.scrollX + 20;
+    const tooltipX = (event.pageX - (pieLayout.width + pieMargins.right + pieMargins.left) / 2)
+    const tooltipY = (event.pageY - pieLayout.height - 80)
 
     tooltip
-      .style("left", (event.pageX - (pieLayout.width + pieMargins.right + pieMargins.left) / 2) + "px")
-      .style("top", (event.pageY - pieLayout.height - 80) + "px");
+      .style("left", tooltipX  + "px")
+      .style("top", tooltipY + "px");
   })
   .on("click", function (event) {
     const tick = event.target.closest(".tick");
