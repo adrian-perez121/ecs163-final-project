@@ -13,4 +13,4 @@ df['release_date'] = pd.to_datetime(df['release_date']).dt.year
 df = df.sort_values(['release_date', 'revenue'], ascending=[True, False])
 
 # Save ot new csv
-df.to_csv('../data/output.csv', index=False)
+df.to_csv('../data/with_budgets_and_ratings.csv', index=False)

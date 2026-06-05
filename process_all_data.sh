@@ -16,6 +16,7 @@ pip install pandas
 echo "Processing data"
 
 python3 all_movies_processor.py
+python3 with_budgets_and_ratings.py
 
 echo "Finished processing data"
 
